@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字人交互系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: transparent;
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        /* ==================== 悬浮球样式 ==================== */
+        .float-ball {
+            position: fixed;
+            left: 24px;
+            bottom: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+            cursor: pointer;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .float-ball:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 30px rgba(99, 102, 241, 0.6);
+        }
+
+        .float-ball.expanded {
+            transform: scale(0);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .float-ball-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .float-ball-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 16px;
+            height: 16px;
+            background: var(--success-color);
+            border-radius: 50%;
+            border: 2px solid var(--card-bg);
+            animation: pulse-badge 2s infinite;
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        /* ==================== 悬浮对话框样式 ==================== */
+        .float-dialog {
+            position: fixed;
+            left: 24px;
+            bottom: 24px;
+            width: 800px;
+            height: 600px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+            z-index: 9998;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0) translateY(100%);
+            transform-origin: bottom left;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .float-dialog.active {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        /* 对话框头部 */
+        .dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dialog-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dialog-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+        }
+
+        .dialog-info h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .dialog-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .dialog-status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--success-color);
+            border-radius: 50%;
+        }
+
+        .dialog-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .header-btn:hover {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .collapse-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .collapse-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        /* 对话框主体 */
+        .dialog-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* 侧边栏 */
+        .dialog-sidebar {
+            width: 200px;
+            background: var(--bg-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+        }
+
+        .sidebar-avatar-section {
+            text-align: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 12px;
+        }
+
+        .sidebar-avatar-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+        }
+
+        .sidebar-avatar-video {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+            display: none;
+        }
+
+        .sidebar-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .sidebar-settings {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .sidebar-settings h4 {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .setting-item {
+            margin-bottom: 10px;
+        }
+
+        .setting-item label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .setting-item select {
+            width: 100%;
+            padding: 6px 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-color);
+            font-size: 12px;
+        }
+
+        .toggle-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+        }
+
+        .toggle-item span {
+            font-size: 12px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 36px;
+            height: 20px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: 0.3s;
+            border-radius: 20px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(16px);
+        }
+
+        /* 聊天区域 */
+        .dialog-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-color);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--primary-color);
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: var(--card-bg);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-content {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message-audio {
+            margin-top: 8px;
+        }
+
+        .message-audio audio {
+            width: 100%;
+            height: 32px;
+        }
+
+        .message-video {
+            margin-top: 8px;
+        }
+
+        .message-video video {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        /* 输入区域 */
+        .chat-input-area {
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--error-color);
+            color: white;
+            border-radius: 16px;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .recording-indicator.active {
+            display: inline-flex;
+        }
+
+        .recording-dot {
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            animation: recording-blink 1s infinite;
+        }
+
+        @keyframes recording-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .input-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-container textarea {
+            flex: 1;
+            padding: 10px 14px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-color);
+            font-size: 14px;
+            resize: none;
+            font-family: inherit;
+            min-height: 44px;
+            max-height: 120px;
+        }
+
+        .input-container textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .send-btn, .voice-btn {
+            padding: 10px 16px;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .send-btn {
+            background: var(--primary-color);
+        }
+
+        .send-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .voice-btn {
+            background: var(--success-color);
+        }
+
+        .voice-btn:hover {
+            background: #16a34a;
+        }
+
+        .voice-btn.recording {
+            background: var(--error-color);
+            animation: recording-pulse 1s infinite;
+        }
+
+        @keyframes recording-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .send-btn:disabled,
+        .voice-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 10px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        /* Loading */
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .loading-dots span {
+            width: 6px;
+            height: 6px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+        }
+
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .modal-grid .setting-item {
+            margin-bottom: 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 100px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 16px;
+            display: none;
+            z-index: 10001;
+            font-size: 13px;
+        }
+
+        .toast.active {
+            display: block;
+            animation: toastIn 0.3s ease;
+        }
+
+        @keyframes toastIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .toast.success { border-color: var(--success-color); }
+        .toast.error { border-color: var(--error-color); }
+        .toast.warning { border-color: var(--warning-color); }
+
+        /* 遮罩层 */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9997;
+            display: none;
+        }
+
+        .dialog-overlay.active {
+            display: block;
+        }
+
+        /* Hidden file input */
+        #avatarFileInput {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 悬浮球 -->
+    <div class="float-ball" id="floatBall" title="点击唤醒助手">
+        <img src="/outputs/avatars/default_avatar.png" alt="助手" class="float-ball-avatar" id="floatBallAvatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%236366f1%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2240%22>AI</text></svg>'">
+        <div class="float-ball-badge"></div>
+    </div>
+
+    <!-- 遮罩层 -->
+    <div class="dialog-overlay" id="dialogOverlay"></div>
+
+    <!-- 悬浮对话框 -->
+    <div class="float-dialog" id="floatDialog">
+        <!-- 头部 -->
+        <div class="dialog-header">
+            <div class="dialog-header-left">
+                <img src="/outputs/avatars/default_avatar.png" alt="助手" class="dialog-avatar" id="dialogAvatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%236366f1%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2240%22>AI</text></svg>'">
+                <div class="dialog-info">
+                    <h3 id="dialogName">小美</h3>
+                    <div class="dialog-status">
+                        <div class="dialog-status-dot" id="statusDot"></div>
+                        <span id="statusText">在线</span>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-header-right">
+                <button class="header-btn" onclick="showAvatarModal()" title="创建形象">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </button>
+                <button class="header-btn" onclick="uploadAvatar()" title="上传形象">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </button>
+                <button class="header-btn collapse-btn" onclick="collapseDialog()" title="收起">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 主体 -->
+        <div class="dialog-body">
+            <!-- 侧边栏 -->
+            <aside class="dialog-sidebar">
+                <div class="sidebar-avatar-section">
+                    <div class="sidebar-avatar-container">
+                        <img src="/outputs/avatars/default_avatar.png" alt="数字人" class="sidebar-avatar" id="sidebarAvatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%236366f1%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2240%22>AI</text></svg>'">
+                        <video id="sidebarVideo" class="sidebar-avatar-video" autoplay loop muted playsinline></video>
+                    </div>
+                    <div class="sidebar-name" id="sidebarName">小美</div>
+                </div>
+
+                <div class="sidebar-settings">
+                    <h4>设置</h4>
+
+                    <div class="setting-item">
+                        <label>语音选择</label>
+                        <select id="voiceSelect">
+                            <option value="zh-CN-XiaoxiaoNeural">晓晓 (女声)</option>
+                            <option value="zh-CN-YunxiNeural">云希 (男声)</option>
+                            <option value="zh-CN-YunyangNeural">云扬 (男声)</option>
+                            <option value="zh-CN-XiaoyiNeural">晓伊 (女声)</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <label>识别语言</label>
+                        <select id="sttLanguage">
+                            <option value="zh">中文</option>
+                            <option value="en">英文</option>
+                            <option value="ja">日语</option>
+                            <option value="auto">自动检测</option>
+                        </select>
+                    </div>
+
+                    <div class="toggle-item">
+                        <span>生成视频</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="generateVideo" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-item">
+                        <span>流式输出</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="streamMode" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 聊天区域 -->
+            <main class="dialog-chat">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message assistant">
+                        <div class="message-content">
+                            你好！我是你的数字人助手，有什么可以帮助你的吗？
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <div class="recording-indicator" id="recordingIndicator">
+                        <div class="recording-dot"></div>
+                        <span>正在录音... 点击停止</span>
+                    </div>
+
+                    <div class="input-container">
+                        <textarea
+                            id="messageInput"
+                            placeholder="输入消息，或点击麦克风按钮进行语音输入..."
+                            rows="1"
+                        ></textarea>
+                        <div class="button-group">
+                            <button class="voice-btn" id="voiceBtn" title="语音输入">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                    <line x1="12" y1="19" x2="12" y2="23"/>
+                                    <line x1="8" y1="23" x2="16" y2="23"/>
+                                </svg>
+                                <span>语音</span>
+                            </button>
+                            <button class="send-btn" id="sendBtn">
+                                <span>发送</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="clearHistory()">清空对话</button>
+                        <button class="action-btn" onclick="exportChat()">导出对话</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Avatar Modal -->
+    <div class="modal-overlay" id="avatarModal">
+        <div class="modal">
+            <h2>创建数字人形象</h2>
+            <div class="setting-item">
+                <label>名称</label>
+                <input type="text" id="newAvatarName" placeholder="输入数字人名称" style="width:100%;padding:8px 12px;background:var(--bg-color);border:1px solid var(--border-color);border-radius:6px;color:var(--text-color);font-size:13px;">
+            </div>
+            <div class="setting-item">
+                <label>描述</label>
+                <input type="text" id="newAvatarDesc" placeholder="描述数字人的特点" style="width:100%;padding:8px 12px;background:var(--bg-color);border:1px solid var(--border-color);border-radius:6px;color:var(--text-color);font-size:13px;">
+            </div>
+            <div class="modal-grid">
+                <div class="setting-item">
+                    <label>风格</label>
+                    <select id="newAvatarStyle">
+                        <option value="professional">专业</option>
+                        <option value="casual">休闲</option>
+                        <option value="anime">二次元</option>
+                        <option value="realistic">写实</option>
+                        <option value="cartoon">卡通</option>
+                        <option value="artistic">艺术</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>性别</label>
+                    <select id="newAvatarGender">
+                        <option value="female">女性</option>
+                        <option value="male">男性</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>年龄</label>
+                    <select id="newAvatarAge">
+                        <option value="young">青年</option>
+                        <option value="middle">中年</option>
+                        <option value="senior">老年</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>表情</label>
+                    <select id="newAvatarExpression">
+                        <option value="smile">微笑</option>
+                        <option value="friendly">友好</option>
+                        <option value="confident">自信</option>
+                        <option value="serious">严肃</option>
+                        <option value="neutral">中性</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>姿势</label>
+                    <select id="newAvatarPose">
+                        <option value="front">正面</option>
+                        <option value="slight_angle">微侧</option>
+                        <option value="profile">侧面</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>背景</label>
+                    <select id="newAvatarBackground">
+                        <option value="clean">简洁</option>
+                        <option value="office">办公</option>
+                        <option value="outdoor">户外</option>
+                        <option value="abstract">抽象</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="hideAvatarModal()">取消</button>
+                <button class="btn-primary" onclick="createAvatar()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="avatarFileInput" accept="image/*">
+
+    <script>
+        // API Base URL
+        const API_BASE = '';
+
+        // State
+        let ws = null;
+        let isStreaming = false;
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isDialogExpanded = false;
+
+        // Elements
+        const floatBall = document.getElementById('floatBall');
+        const floatDialog = document.getElementById('floatDialog');
+        const dialogOverlay = document.getElementById('dialogOverlay');
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const recordingIndicator = document.getElementById('recordingIndicator');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkStatus();
+            connectWebSocket();
+            loadVoices();
+
+            // Auto resize textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            // Enter to send
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            sendBtn.addEventListener('click', sendMessage);
+            voiceBtn.addEventListener('click', toggleRecording);
+
+            // Float ball click
+            floatBall.addEventListener('click', expandDialog);
+
+            // Overlay click to collapse
+            dialogOverlay.addEventListener('click', collapseDialog);
+
+            // Setup avatar upload
+            document.getElementById('avatarFileInput').addEventListener('change', handleAvatarUpload);
+        });
+
+        // Expand dialog
+        function expandDialog() {
+            floatBall.classList.add('expanded');
+            floatDialog.classList.add('active');
+            dialogOverlay.classList.add('active');
+            isDialogExpanded = true;
+        }
+
+        // Collapse dialog
+        function collapseDialog() {
+            floatDialog.classList.remove('active');
+            dialogOverlay.classList.remove('active');
+            floatBall.classList.remove('expanded');
+            isDialogExpanded = false;
+        }
+
+        // Check system status
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/status`);
+                const data = await response.json();
+                updateStatus(data);
+            } catch (error) {
+                console.error('Status check failed:', error);
+                statusDot.style.background = '#ef4444';
+                statusText.textContent = '离线';
+            }
+        }
+
+        // Update status display
+        function updateStatus(data) {
+            const allHealthy = Object.values(data.components).every(c => c.healthy);
+            statusDot.style.background = allHealthy ? '#22c55e' : '#f59e0b';
+            statusText.textContent = allHealthy ? '在线' : '异常';
+
+            if (data.current_avatar && data.current_avatar.name) {
+                document.getElementById('dialogName').textContent = data.current_avatar.name;
+                document.getElementById('sidebarName').textContent = data.current_avatar.name;
+            }
+        }
+
+        // Connect WebSocket
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws/chat`);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+
+                if (data.type === 'chunk') {
+                    appendStreamChunk(data.content);
+                } else if (data.type === 'complete') {
+                    finalizeStreamMessage(data.content);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        // Load voices
+        async function loadVoices() {
+            try {
+                const response = await fetch(`${API_BASE}/api/tts/voices?language=zh-CN`);
+                const data = await response.json();
+
+                const voiceSelect = document.getElementById('voiceSelect');
+                voiceSelect.innerHTML = '';
+
+                for (const [name, desc] of Object.entries(data.voices)) {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = desc;
+                    voiceSelect.appendChild(option);
+                }
+            } catch (error) {
+                console.error('Failed to load voices:', error);
+            }
+        }
+
+        // Send message
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || isStreaming) return;
+
+            addMessage('user', text);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            sendBtn.disabled = true;
+
+            const streamMode = document.getElementById('streamMode').checked;
+            const generateVideo = document.getElementById('generateVideo').checked;
+
+            try {
+                if (streamMode && ws && ws.readyState === WebSocket.OPEN) {
+                    isStreaming = true;
+                    addMessage('assistant', '', true, null, null, 'text');
+                    ws.send(JSON.stringify({
+                        type: 'chat',
+                        text: text
+                    }));
+                } else {
+                    const response = await fetch(`${API_BASE}/api/chat`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text,
+                            generate_audio: true,
+                            generate_video: generateVideo
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        addMessage('assistant', data.data.text, false, data.data.audio_url, data.data.video_url, 'text');
+                    } else {
+                        showToast('发送失败', 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Send message error:', error);
+                showToast('发送失败: ' + error.message, 'error');
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        // Voice Recording
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                await stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    await sendAudioMessage(audioBlob);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                voiceBtn.classList.add('recording');
+                recordingIndicator.classList.add('active');
+                voiceBtn.querySelector('span').textContent = '停止';
+
+                showToast('开始录音...', 'success');
+            } catch (error) {
+                console.error('Failed to start recording:', error);
+                showToast('无法访问麦克风', 'error');
+            }
+        }
+
+        async function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                recordingIndicator.classList.remove('active');
+                voiceBtn.querySelector('span').textContent = '语音';
+            }
+        }
+
+        async function sendAudioMessage(audioBlob) {
+            try {
+                showToast('正在识别语音...', 'success');
+
+                const formData = new FormData();
+                formData.append('file', audioBlob, 'recording.webm');
+
+                const language = document.getElementById('sttLanguage').value;
+                if (language !== 'auto') {
+                    formData.append('language', language);
+                }
+
+                formData.append('generate_audio', 'true');
+                formData.append('generate_video', document.getElementById('generateVideo').checked ? 'true' : 'false');
+
+                const response = await fetch(`${API_BASE}/api/chat/audio`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addMessage('user', `🎤 ${data.data.recognized_text}`);
+                    const responseData = data.data.response;
+                    if (responseData.audio_url) {
+                        showToast('正在播放语音回复...', 'success');
+                    }
+                    addMessage('assistant', responseData.text, false, responseData.audio_url, responseData.video_url, 'voice');
+                } else {
+                    showToast('语音识别失败', 'error');
+                }
+            } catch (error) {
+                console.error('Audio message error:', error);
+                showToast('语音识别失败: ' + error.message, 'error');
+            }
+        }
+
+        // Add message to chat
+        function addMessage(role, content, isStreaming = false, audioUrl = null, videoUrl = null, inputType = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            let audioHtml = '';
+            let videoHtml = '';
+
+            if (videoUrl) {
+                videoHtml = `<div class="message-video"><video controls src="${videoUrl}"></video></div>`;
+                updateAvatarVideo(videoUrl);
+            }
+
+            if (role === 'assistant') {
+                if (inputType === 'voice' && audioUrl) {
+                    audioHtml = `<div class="message-audio"><audio controls autoplay src="${audioUrl}"></audio></div>`;
+                } else if (audioUrl) {
+                    audioHtml = `<div class="message-audio"><audio controls src="${audioUrl}"></audio></div>`;
+                }
+            }
+
+            messageDiv.innerHTML = `
+                <div class="message-content">${isStreaming ? '<div class="loading-dots"><span></span><span></span><span></span></div>' : formatContent(content)}</div>
+                ${audioHtml}
+                ${videoHtml}
+            `;
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            if (isStreaming) {
+                messageDiv.id = 'streaming-message';
+            }
+
+            return messageDiv;
+        }
+
+        // Update avatar video
+        function updateAvatarVideo(videoUrl) {
+            const sidebarAvatar = document.getElementById('sidebarAvatar');
+            const sidebarVideo = document.getElementById('sidebarVideo');
+            const floatBallAvatar = document.getElementById('floatBallAvatar');
+
+            if (videoUrl) {
+                sidebarAvatar.style.display = 'none';
+                sidebarVideo.style.display = 'block';
+                sidebarVideo.src = videoUrl;
+                sidebarVideo.play();
+            } else {
+                sidebarAvatar.style.display = 'block';
+                sidebarVideo.style.display = 'none';
+                sidebarVideo.src = '';
+            }
+        }
+
+        // Update all avatar images
+        function updateAllAvatars(imageUrl) {
+            document.getElementById('floatBallAvatar').src = imageUrl;
+            document.getElementById('dialogAvatar').src = imageUrl;
+            document.getElementById('sidebarAvatar').src = imageUrl;
+        }
+
+        // Format content
+        function formatContent(content) {
+            return content
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>');
+        }
+
+        // Stream handling
+        let streamingContent = '';
+
+        function appendStreamChunk(chunk) {
+            streamingContent += chunk;
+            const messageDiv = document.getElementById('streaming-message');
+            if (messageDiv) {
+                messageDiv.querySelector('.message-content').innerHTML = formatContent(streamingContent);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        function finalizeStreamMessage(content) {
+            const messageDiv = document.getElementById('streaming-message');
+            if (messageDiv) {
+                messageDiv.removeAttribute('id');
+                messageDiv.querySelector('.message-content').innerHTML = formatContent(content);
+                generateAudioForStreaming(content, messageDiv);
+            }
+            streamingContent = '';
+            isStreaming = false;
+        }
+
+        // Generate audio for streaming messages
+        async function generateAudioForStreaming(text, messageDiv) {
+            try {
+                const response = await fetch(`${API_BASE}/api/tts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        voice: document.getElementById('voiceSelect').value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data.audio_url) {
+                    const audioDiv = document.createElement('div');
+                    audioDiv.className = 'message-audio';
+                    audioDiv.innerHTML = `<audio controls src="${data.data.audio_url}"></audio>`;
+                    messageDiv.appendChild(audioDiv);
+                }
+            } catch (error) {
+                console.error('Generate audio for streaming error:', error);
+            }
+        }
+
+        // Clear history
+        async function clearHistory() {
+            try {
+                await fetch(`${API_BASE}/api/history`, { method: 'DELETE' });
+                chatMessages.innerHTML = '';
+                addMessage('assistant', '对话已清空。有什么新话题想聊吗？');
+                showToast('对话已清空', 'success');
+            } catch (error) {
+                showToast('清空失败', 'error');
+            }
+        }
+
+        // Export chat
+        function exportChat() {
+            const messages = [];
+            document.querySelectorAll('.message').forEach(msg => {
+                const role = msg.classList.contains('user') ? '用户' : '助手';
+                const content = msg.querySelector('.message-content').textContent;
+                messages.push(`【${role}】\n${content}`);
+            });
+
+            const text = messages.join('\n\n---\n\n');
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chat_${new Date().toISOString().slice(0, 10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Avatar modal
+        function showAvatarModal() {
+            document.getElementById('avatarModal').classList.add('active');
+        }
+
+        function hideAvatarModal() {
+            document.getElementById('avatarModal').classList.remove('active');
+        }
+
+        async function createAvatar() {
+            const name = document.getElementById('newAvatarName').value.trim() || '新形象';
+            const description = document.getElementById('newAvatarDesc').value.trim();
+            const style = document.getElementById('newAvatarStyle').value;
+            const gender = document.getElementById('newAvatarGender').value;
+            const age = document.getElementById('newAvatarAge').value;
+            const expression = document.getElementById('newAvatarExpression').value;
+            const pose = document.getElementById('newAvatarPose').value;
+            const background = document.getElementById('newAvatarBackground').value;
+
+            try {
+                showToast('正在创建形象...', 'success');
+
+                const response = await fetch(`${API_BASE}/api/avatar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        description,
+                        style,
+                        gender,
+                        age,
+                        expression,
+                        pose,
+                        background
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    updateAllAvatars(data.data.image_url);
+                    document.getElementById('dialogName').textContent = name;
+                    document.getElementById('sidebarName').textContent = name;
+                    showToast('形象创建成功', 'success');
+                    hideAvatarModal();
+                } else {
+                    showToast('创建失败', 'error');
+                }
+            } catch (error) {
+                showToast('创建失败: ' + error.message, 'error');
+            }
+        }
+
+        // Upload avatar
+        function uploadAvatar() {
+            document.getElementById('avatarFileInput').click();
+        }
+
+        async function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                showToast('正在上传形象...', 'success');
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('name', '自定义形象');
+
+                const response = await fetch(`${API_BASE}/api/avatar/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    updateAllAvatars(data.data.image_url);
+                    document.getElementById('dialogName').textContent = data.data.name;
+                    document.getElementById('sidebarName').textContent = data.data.name;
+                    showToast('形象上传成功', 'success');
+                } else {
+                    showToast('上传失败', 'error');
+                }
+            } catch (error) {
+                showToast('上传失败: ' + error.message, 'error');
+            }
+
+            event.target.value = '';
+        }
+
+        // Toast
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast active ${type}`;
+
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

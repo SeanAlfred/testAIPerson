@@ -1,0 +1,149 @@
+# 数字人交互系统配置文件
+
+# 系统设置
+system:
+  name: "数字人交互系统"
+  version: "1.0.0"
+  debug: true
+  log_level: "INFO"
+
+# API服务配置
+server:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins:
+    - "http://localhost"
+    - "http://localhost:3000"
+    - "http://127.0.0.1"
+
+# 大模型配置 (Ollama)
+llm:
+  provider: "ollama"
+  ollama:
+    base_url: "http://localhost:11434"
+    model: "qwen3:8b"  # 可选: llama3, qwen2.5, mistral 等
+    timeout: 60
+  # 备选API配置
+  openai:
+    api_key: ""
+    base_url: "https://api.openai.com/v1"
+    model: "gpt-4o-mini"
+
+# 语音合成配置 (Edge-TTS)
+tts:
+  provider: "edge-tts"
+  edge_tts:
+    voice: "zh-CN-XiaoxiaoNeural"  # 中文女声
+    # 其他可选声音:
+    # - zh-CN-YunxiNeural (中文男声)
+    # - zh-CN-YunyangNeural (中文男声)
+    # - zh-CN-XiaoyiNeural (中文女声)
+    rate: "+0%"  # 语速: -50% 到 +100%
+    volume: "+0%"  # 音量: -50% 到 +100%
+
+# 语音识别配置 (STT)
+stt:
+  provider: "whisper"  # whisper, azure, baidu, aliyun
+  whisper:
+    model: "base"  # tiny, base, small, medium, large
+    language: "zh"  # zh, en, ja, ko 等
+    use_api: false  # 是否使用OpenAI API (true) 或本地模型 (false)
+    api_key: ""  # OpenAI API Key (使用API时需要)
+    base_url: "https://api.openai.com/v1"
+  # Azure语音服务配置
+  azure:
+    api_key: ""
+    region: "eastasia"
+    language: "zh-CN"
+  # 百度语音识别配置
+  baidu:
+    app_id: ""
+    api_key: ""
+    secret_key: ""
+  # 阿里云语音识别配置
+  aliyun:
+    app_key: ""
+    access_key_id: ""
+    access_key_secret: ""
+
+# 图像生成配置 (云端API)
+image:
+  provider: "siliconflow"  # siliconflow, replicate, stability
+  siliconflow:
+    api_key: "sk-tuschgeaxljqmhoawmodckbsxhyitrhmoodauzzumvkqnjlu"
+    model: "Kwai-Kolors/Kolors"  # 快手可图模型
+    negative_prompt: "low quality, blurry, distorted, ugly"
+  replicate:
+    api_key: ""
+    model: "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b"
+  stability:
+    api_key: ""
+
+# 视频生成配置
+video:
+  provider: "sadtalker"  # sadtalker, wav2lip
+  sadtalker:
+    api_url: ""  # 云端服务地址，如使用本地则留空
+    preprocess: "crop"
+  # 备选：使用云端API
+  d_id:
+    api_key: ""
+  heygen:
+    api_key: ""
+
+# 数字人配置
+digital_human:
+  # 默认数字人形象
+  default_avatar:
+    name: "小美"
+    description: "专业的AI助手，亲切友好"
+    style: "professional"
+
+  # 表情/动作配置
+  animation:
+    blink_rate: 0.1  # 眨眼频率
+    head_movement: true  # 是否有头部微动
+    idle_animation: true  # 空闲时是否有动画
+
+# 输出配置
+output:
+  audio_dir: "outputs/audio"
+  image_dir: "outputs/images"
+  video_dir: "outputs/videos"
+  temp_dir: "outputs/temp"
+
+# 对话配置
+conversation:
+  max_history: 20  # 保留的对话历史条数
+  system_prompt: |
+    你是一个专业的AI数字人助手，名叫{name}。
+    你的特点是：{description}
+    请用简洁、友好、专业的方式回答用户的问题。
+    回答时注意：
+    1. 保持回复简短，适合语音播报
+    2. 语气亲切自然
+    3. 避免使用Markdown格式
+
+# 网络搜索配置
+web_search:
+  enabled: true  # 是否启用联网搜索
+  provider: "baidu"  # 搜索引擎: baidu, duckduckgo, bing, google
+  max_results: 5  # 最大搜索结果数
+  timeout: 10  # 请求超时时间(秒)
+  max_content_length: 4000  # 最大内容长度
+  # Bing搜索API配置（可选）
+  bing_api_key: ""
+  # Google搜索API配置（可选）
+  google_api_key: ""
+  google_cx: ""
+  # 信任的域名优先
+  trusted_domains:
+    - "wikipedia.org"
+    - "baike.baidu.com"
+    - "zhihu.com"
+    - "news.qq.com"
+    - "news.sina.com.cn"
+    - "cctv.com"
+    - "gov.cn"
+    - "github.com"
+    - "stackoverflow.com"

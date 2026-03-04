@@ -1,0 +1,37 @@
+# Environment variables (contains secrets)
+.env
+
+# Python virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Output files
+outputs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test_audio.wav
+*.wav
+*.mp3
+*.jpg
+*.jpeg
+*.png

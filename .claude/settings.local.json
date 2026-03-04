@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat:*)",
+      "Bash(tasklist:*)",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(./venv/Scripts/python:*)",
+      "Bash(file:*)",
+      "Bash(./venv/Scripts/pip install:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}
