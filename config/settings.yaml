@@ -1,5 +1,6 @@
 # 数字人交互系统配置文件
-# 注意：API Keys 已移至 config/credentials/api_keys.yaml
+# 注意：API Keys 和 Base URLs 已移至 config/credentials/api_keys.yaml
+# 所有模型的URL和API Key统一在 api_keys.yaml 中配置，方便随时切换
 
 # 系统设置
 system:
@@ -20,19 +21,18 @@ server:
     - "null"  # 浏览器扩展某些情况下 origin 为 null
 
 # 大模型配置 (Ollama)
+# 注意：Base URL 和 API Key 在 config/credentials/api_keys.yaml 中配置
 llm:
   provider: "ollama"
   call_mode: "ollamaAPI"  # ollamaAPI: 传统API调用, zeroToken: 免Token调用
   
-  # Ollama配置
+  # Ollama配置 (base_url 在 api_keys.yaml)
   ollama:
-    base_url: "http://localhost:11434"
     model: "qwen3-coder:480b-cloud"  # 可选: llama3, qwen2.5, mistral 等
     timeout: 60
   
-  # 备选API配置 (API Key 在 credentials/api_keys.yaml)
+  # 备选API配置 (base_url 和 api_key 在 api_keys.yaml)
   openai:
-    base_url: "https://api.openai.com/v1"
     model: "gpt-4o-mini"
   
   # ZeroToken免Token调用配置
@@ -40,9 +40,8 @@ llm:
     platform: "deepseek"  # deepseek, claude, doubao
     model: null  # null表示使用平台默认模型
   
-  # DeepSeek官方API配置 (API Key 在 credentials/api_keys.yaml)
+  # DeepSeek官方API配置 (base_url 和 api_key 在 api_keys.yaml)
   deepseek:
-    base_url: "https://api.deepseek.com/v1"
     model: "deepseek-chat"  # deepseek-chat, deepseek-reasoner
 
 # 语音合成配置 (Edge-TTS)
@@ -58,14 +57,13 @@ tts:
     volume: "+0%"  # 音量: -50% 到 +100%
 
 # 语音识别配置 (STT)
-# 注意：API Keys 在 config/credentials/api_keys.yaml
+# 注意：API Keys 和 Base URLs 在 config/credentials/api_keys.yaml
 stt:
   provider: "whisper"  # whisper, azure, baidu, aliyun
   whisper:
     model: "base"  # tiny, base, small, medium, large
     language: "zh"  # zh, en, ja, ko 等
     use_api: false  # 是否使用OpenAI API (true) 或本地模型 (false)
-    base_url: "https://api.openai.com/v1"
   azure:
     region: "eastasia"
     language: "zh-CN"

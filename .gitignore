@@ -1,6 +1,12 @@
 # Environment variables (contains secrets)
 .env
 
+# API Keys 凭证文件 (敏感信息，禁止提交)
+config/credentials/api_keys.yaml
+config/credentials/*.json
+credentials/
+*.credentials
+
 # Python virtual environment
 venv/
 .venv/

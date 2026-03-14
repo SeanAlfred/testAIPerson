@@ -10,7 +10,7 @@ import httpx
 import asyncio
 
 # 导入凭证加载器
-from config.credentials_loader import get_speech_key, get_speech_config
+from config.credentials_loader import get_speech_key, get_speech_base_url, get_speech_config
 
 
 class STTEngine:
@@ -26,9 +26,9 @@ class STTEngine:
             self.model = self.api_config.get("model", "base")
             self.language = self.api_config.get("language", "zh")
             self.use_api = self.api_config.get("use_api", False)
-            # 优先从凭证文件获取 API Key
+            # 优先从凭证文件获取 API Key 和 Base URL
             self.api_key = get_speech_key('whisper') or self.api_config.get("api_key", os.getenv("OPENAI_API_KEY", ""))
-            self.base_url = self.api_config.get("base_url", "https://api.openai.com/v1")
+            self.base_url = get_speech_base_url('whisper') or self.api_config.get("base_url", "https://api.openai.com/v1")
             
             # 设置ffmpeg环境变量（Whisper需要）
             self._setup_ffmpeg_env()

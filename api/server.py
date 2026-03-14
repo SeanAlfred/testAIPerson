@@ -2041,6 +2041,247 @@ async def proxy_resource(path: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== 文件上传与解析 ====================
+
+class FileUploadResponse(BaseModel):
+    """文件上传响应"""
+    success: bool
+    file_id: str
+    file_name: str
+    file_type: str
+    file_size: int
+    message: str
+
+
+class FileParseRequest(BaseModel):
+    """文件解析请求"""
+    file_id: str
+    question: Optional[str] = None
+
+
+@app.post("/api/file/upload", response_model=FileUploadResponse)
+async def upload_file(file: UploadFile = File(...)):
+    """
+    上传文件
+    
+    支持的文件类型:
+    - 文档: .docx, .doc, .xlsx, .xls, .pptx, .ppt, .pdf, .txt, .md, .csv, .json
+    - 图片: .jpg, .jpeg, .png, .gif, .webp, .bmp, .svg
+    - 视频: .mp4, .avi, .mov, .mkv, .webm, .flv
+    - 音频: .mp3, .wav, .m4a, .flac, .ogg
+    """
+    try:
+        import uuid
+        from datetime import datetime
+        
+        # 生成文件ID
+        file_id = str(uuid.uuid4())[:8]
+        
+        # 创建上传目录
+        upload_dir = Path("uploads")
+        upload_dir.mkdir(exist_ok=True)
+        
+        # 保存文件
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_ext = Path(file.filename).suffix
+        saved_filename = f"{file_id}_{timestamp}{file_ext}"
+        file_path = upload_dir / saved_filename
+        
+        # 写入文件
+        content = await file.read()
+        with open(file_path, 'wb') as f:
+            f.write(content)
+        
+        # 获取文件类型
+        from utils.file_parser import get_file_type
+        file_type = get_file_type(file.filename)
+        
+        logger.info(f"文件上传成功: {file.filename} -> {saved_filename}, 类型: {file_type}")
+        
+        return FileUploadResponse(
+            success=True,
+            file_id=file_id,
+            file_name=file.filename,
+            file_type=file_type,
+            file_size=len(content),
+            message=f"文件上传成功"
+        )
+        
+    except Exception as e:
+        logger.error(f"文件上传失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/file/parse")
+async def parse_file(request: FileParseRequest):
+    """
+    解析上传的文件
+    
+    根据文件类型自动选择对应的智能体进行解析:
+    - 文档类型 -> DocumentAgent
+    - 图片类型 -> ImageAgent  
+    - 视频类型 -> VideoAgent
+    """
+    try:
+        import glob
+        
+        # 查找上传的文件
+        upload_dir = Path("uploads")
+        pattern = str(upload_dir / f"{request.file_id}_*")
+        files = glob.glob(pattern)
+        
+        if not files:
+            raise HTTPException(status_code=404, detail="文件未找到")
+        
+        file_path = files[0]
+        
+        # 获取文件类型
+        from utils.file_parser import get_file_type, parse_uploaded_file
+        file_type = get_file_type(file_path)
+        
+        # 根据文件类型选择智能体
+        if file_type == 'document':
+            from core.agents.document_agent import DocumentAgent
+            agent = DocumentAgent({})
+            result = await agent.analyze_with_llm(file_path, request.question)
+            
+        elif file_type == 'image':
+            from core.agents.image_agent import ImageAgent
+            agent = ImageAgent({})
+            result = await agent.analyze_with_vision(file_path, request.question or "请描述这张图片的内容")
+            
+        elif file_type == 'video':
+            from core.agents.video_agent import VideoAgent
+            agent = VideoAgent({})
+            result = await agent.analyze_video(file_path, request.question or "请分析这个视频的内容")
+            
+        elif file_type == 'audio':
+            # 音频使用 STT 转录
+            from core.stt_engine import STTEngine
+            from config import load_config
+            config = load_config()
+            stt = STTEngine(config.get('stt', {}))
+            # 直接解析音频文件
+            result_data = await parse_uploaded_file(file_path, 'audio')
+            result = AgentResult(
+                success=result_data.get('success', False),
+                message=result_data.get('summary', ''),
+                data=result_data
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"不支持的文件类型: {file_type}")
+        
+        return {
+            "success": result.success,
+            "message": result.message,
+            "data": result.data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"文件解析失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/file/chat")
+async def chat_with_file(
+    file: UploadFile = File(...),
+    text: str = Form(...),
+    call_mode: str = Form("ollamaAPI"),
+    zero_token_platform: str = Form("deepseek"),
+    model: str = Form(None)
+):
+    """
+    上传文件并进行对话
+    
+    根据文件类型自动解析并回答用户问题
+    """
+    try:
+        import uuid
+        from datetime import datetime
+        
+        # 保存上传的文件
+        file_id = str(uuid.uuid4())[:8]
+        upload_dir = Path("uploads")
+        upload_dir.mkdir(exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_ext = Path(file.filename).suffix
+        saved_filename = f"{file_id}_{timestamp}{file_ext}"
+        file_path = upload_dir / saved_filename
+        
+        content = await file.read()
+        with open(file_path, 'wb') as f:
+            f.write(content)
+        
+        # 获取文件类型
+        from utils.file_parser import get_file_type
+        file_type = get_file_type(file.filename)
+        
+        # 构建上下文提示
+        context_prompt = f"用户上传了一个{file_type}文件: {file.filename}\n\n用户问题: {text}\n\n"
+        
+        # 解析文件内容
+        if file_type == 'document':
+            from core.agents.document_agent import DocumentAgent
+            agent = DocumentAgent({})
+            parse_result = await agent.parse_file(file_path)
+            if parse_result.success:
+                file_content = parse_result.data.get('content', '')[:4000]
+                context_prompt = f"文档内容:\n{file_content}\n\n用户问题: {text}"
+                
+        elif file_type == 'image':
+            from core.agents.image_agent import ImageAgent
+            agent = ImageAgent({})
+            parse_result = await agent.analyze_with_vision(file_path, text)
+            if parse_result.success:
+                image_analysis = parse_result.data.get('analysis', '')
+                context_prompt = f"图片分析结果:\n{image_analysis}\n\n用户问题: {text}"
+                
+        elif file_type == 'video':
+            from core.agents.video_agent import VideoAgent
+            agent = VideoAgent({})
+            parse_result = await agent.analyze_video(file_path, text)
+            if parse_result.success:
+                video_analysis = parse_result.data.get('analysis', '')
+                context_prompt = f"视频分析结果:\n{video_analysis}\n\n用户问题: {text}"
+        
+        # 使用 LLM 回答
+        if not digital_human:
+            raise HTTPException(status_code=503, detail="系统未初始化")
+        
+        # 动态切换调用模式
+        if call_mode:
+            digital_human.llm.call_mode = call_mode
+            if call_mode == "zeroToken" and zero_token_platform:
+                digital_human.llm.zero_token_platform = zero_token_platform
+            elif call_mode == "ollamaAPI" and model:
+                digital_human.llm.model = model
+        
+        result = await digital_human.chat(
+            user_input=context_prompt,
+            generate_audio=False,
+            generate_video=False,
+            stream=False,
+            enable_search=False
+        )
+        
+        return {
+            "success": True,
+            "data": {
+                "response": result.get("response", ""),
+                "file_name": file.filename,
+                "file_type": file_type,
+                "file_size": len(content)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"文件对话失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
 

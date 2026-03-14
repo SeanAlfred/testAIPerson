@@ -12,7 +12,7 @@ import httpx
 import ollama
 
 # 导入凭证加载器
-from config.credentials_loader import get_llm_key, get_llm_config
+from config.credentials_loader import get_llm_key, get_llm_base_url, get_llm_config
 
 
 # 平台配置
@@ -76,7 +76,8 @@ class LLMClient:
 
     def _init_ollama(self):
         """初始化Ollama客户端"""
-        self.base_url = self.ollama_config.get("base_url", "http://localhost:11434")
+        # 优先从凭证文件获取 Base URL
+        self.base_url = get_llm_base_url('ollama') or self.ollama_config.get("base_url", "http://localhost:11434")
         self.model = self.ollama_config.get("model", "qwen2.5:7b")
         self.timeout = self.ollama_config.get("timeout", 60)
         self.ollama_client = ollama.Client(host=self.base_url)
@@ -85,9 +86,9 @@ class LLMClient:
     def _init_openai(self):
         """初始化OpenAI客户端"""
         from openai import AsyncOpenAI
-        # 优先从凭证文件获取 API Key
+        # 优先从凭证文件获取 API Key 和 Base URL
         self.api_key = get_llm_key('openai') or self.openai_config.get("api_key", "")
-        self.base_url = get_llm_config('openai').get('base_url') or self.openai_config.get("base_url", "https://api.openai.com/v1")
+        self.base_url = get_llm_base_url('openai') or self.openai_config.get("base_url", "https://api.openai.com/v1")
         self.model = self.openai_config.get("model", "gpt-4o-mini")
 
         if self.api_key:
@@ -98,9 +99,9 @@ class LLMClient:
     def _init_deepseek(self):
         """初始化DeepSeek API客户端"""
         from openai import AsyncOpenAI
-        # 优先从凭证文件获取 API Key
+        # 优先从凭证文件获取 API Key 和 Base URL
         self.deepseek_api_key = get_llm_key('deepseek') or self.deepseek_config.get("api_key", "")
-        self.deepseek_base_url = get_llm_config('deepseek').get('base_url') or self.deepseek_config.get("base_url", "https://api.deepseek.com/v1")
+        self.deepseek_base_url = get_llm_base_url('deepseek') or self.deepseek_config.get("base_url", "https://api.deepseek.com/v1")
         self.deepseek_model = self.deepseek_config.get("model", "deepseek-chat")
 
         if self.deepseek_api_key:
