@@ -467,7 +467,7 @@ web_search:
 
 digital_human:
   default_avatar:
-    name: "小美"
+    name: "小婷"
     description: "专业的AI助手，亲切友好"
     style: "professional"
 

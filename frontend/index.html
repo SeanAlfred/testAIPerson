@@ -31,11 +31,93 @@
             min-height: 100vh;
         }
 
+        /* ==================== 主内容区域 ==================== */
+        .main-content {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+
+        .main-content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* 加载失败备选界面 */
+        .fallback-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .fallback-content {
+            text-align: center;
+            padding: 40px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+        }
+
+        .fallback-content h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .open-link-btn {
+            display: inline-block;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            margin-top: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .open-link-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .retry-btn {
+            display: block;
+            width: 100%;
+            margin-top: 16px;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .retry-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
         /* ==================== 悬浮球样式 ==================== */
         .float-ball {
             position: fixed;
-            left: 24px;
+            right: 24px;
             bottom: 24px;
+            left: auto;
             width: 64px;
             height: 64px;
             border-radius: 50%;
@@ -46,11 +128,20 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             overflow: hidden;
+            user-select: none;
+            touch-action: none;
         }
 
-        .float-ball:hover {
+        .float-ball.dragging {
+            transition: none;
+            transform: scale(1.15);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.6);
+            cursor: grabbing;
+        }
+
+        .float-ball:hover:not(.dragging) {
             transform: scale(1.1);
             box-shadow: 0 6px 30px rgba(99, 102, 241, 0.6);
         }
@@ -59,6 +150,10 @@
             transform: scale(0);
             opacity: 0;
             pointer-events: none;
+        }
+
+        .float-ball.snapping {
+            transition: left 0.3s ease, right 0.3s ease, transform 0.3s ease;
         }
 
         .float-ball-avatar {
@@ -88,8 +183,9 @@
         /* ==================== 悬浮对话框样式 ==================== */
         .float-dialog {
             position: fixed;
-            left: 24px;
+            right: 24px;
             bottom: 24px;
+            left: auto;
             width: 800px;
             height: 600px;
             background: var(--card-bg);
@@ -100,7 +196,7 @@
             flex-direction: column;
             overflow: hidden;
             transform: scale(0) translateY(100%);
-            transform-origin: bottom left;
+            transform-origin: bottom right;
             opacity: 0;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -551,6 +647,110 @@
             40% { transform: scale(1); }
         }
 
+        /* Thinking Mode - AI思考模式样式 */
+        .thinking-container {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+            border-left: 3px solid #6366f1;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 8px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .thinking-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #6366f1;
+            font-size: 13px;
+        }
+
+        .thinking-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            font-size: 11px;
+            color: white;
+            animation: pulse-thinking 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-thinking {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .thinking-steps {
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.8;
+        }
+
+        .thinking-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin: 6px 0;
+            opacity: 0;
+            transform: translateX(-10px);
+            animation: step-appear 0.3s ease forwards;
+        }
+
+        .thinking-step-icon {
+            color: #6366f1;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .thinking-step-text {
+            flex: 1;
+        }
+
+        @keyframes step-appear {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .thinking-progress-bar {
+            height: 3px;
+            background: rgba(99, 102, 241, 0.2);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .thinking-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .thinking-progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
         /* Modal */
         .modal-overlay {
             display: none;
@@ -633,7 +833,8 @@
         .toast {
             position: fixed;
             bottom: 100px;
-            left: 100px;
+            right: 100px;
+            left: auto;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -679,9 +880,31 @@
     </style>
 </head>
 <body>
+    <!-- 主内容区域 - 嵌入外部页面 -->
+    <div class="main-content">
+        <iframe id="mainFrame" src="/proxy/page"
+            frameborder="0"
+            allowfullscreen
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation">
+            您的浏览器不支持 iframe，请升级浏览器。
+        </iframe>
+
+        <!-- 加载失败时的备选界面 -->
+        <div class="fallback-container" id="fallbackContainer" style="display: none;">
+            <div class="fallback-content">
+                <h2>🔍 百度搜索</h2>
+                <p style="color: var(--text-muted); margin: 16px 0;">页面加载失败，请在新窗口中打开百度</p>
+                <a href="https://www.baidu.com" target="_blank" class="open-link-btn">
+                    打开百度
+                </a>
+                <button class="retry-btn" onclick="retryFrame()">重试加载</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 悬浮球 -->
     <div class="float-ball" id="floatBall" title="点击唤醒助手">
-        <img src="/outputs/avatars/default_avatar.png" alt="助手" class="float-ball-avatar" id="floatBallAvatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%236366f1%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2240%22>AI</text></svg>'">
+        <img src="/outputs/avatars/default_avatar.png" alt="助手" class="float-ball-avatar" id="floatBallAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Cdefs%3E%3ClinearGradient id=%22bgGrad%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%23667eea%22/%3E%3Cstop offset=%2250%25%22 style=%22stop-color:%23764ba2%22/%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%23f093fb%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22faceGrad%22 x1=%220%25%22 y1=%220%25%22 x2=%220%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%23ffecd2%22/%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%23fcb69f%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22url(%23bgGrad)%22/%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.3)%22 stroke-width=%221%22/%3E%3Cellipse cx=%2250%22 cy=%2252%22 rx=%2228%22 ry=%2230%22 fill=%22url(%23faceGrad)%22/%3E%3Cellipse cx=%2250%22 cy=%2230%22 rx=%2226%22 ry=%2216%22 fill=%22%234a3f35%22/%3E%3Cellipse cx=%2235%22 cy=%2235%22 rx=%228%22 ry=%2212%22 fill=%22%234a3f35%22/%3E%3Cellipse cx=%2265%22 cy=%2235%22 rx=%228%22 ry=%2212%22 fill=%22%234a3f35%22/%3E%3Cpath d=%22M28 38 Q35 28 50 30 Q65 28 72 38 Q65 35 50 37 Q35 35 28 38%22 fill=%22%234a3f35%22/%3E%3Cellipse cx=%2238%22 cy=%2252%22 rx=%225%22 ry=%226%22 fill=%22%232d2d2d%22/%3E%3Cellipse cx=%2262%22 cy=%2252%22 rx=%225%22 ry=%226%22 fill=%22%232d2d2d%22/%3E%3Ccircle cx=%2240%22 cy=%2250%22 r=%222%22 fill=%22white%22/%3E%3Ccircle cx=%2264%22 cy=%2250%22 r=%222%22 fill=%22white%22/%3E%3Cpath d=%22M32 44 Q38 42 44 44%22 fill=%22none%22 stroke=%22%234a3f35%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M56 44 Q62 42 68 44%22 fill=%22none%22 stroke=%22%234a3f35%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/%3E%3Cellipse cx=%2230%22 cy=%2258%22 rx=%225%22 ry=%223%22 fill=%22rgba(255,150,150,0.4)%22/%3E%3Cellipse cx=%2270%22 cy=%2258%22 rx=%225%22 ry=%223%22 fill=%22rgba(255,150,150,0.4)%22/%3E%3Cellipse cx=%2250%22 cy=%2258%22 rx=%222%22 ry=%221.5%22 fill=%22rgba(200,150,130,0.5)%22/%3E%3Cpath d=%22M42 66 Q50 72 58 66%22 fill=%22none%22 stroke=%22%23e57373%22 stroke-width=%222%22 stroke-linecap=%22round%22/%3E%3Ccircle cx=%2250%22 cy=%2218%22 r=%228%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.8)%22 stroke-width=%222%22/%3E%3Ccircle cx=%2250%22 cy=%2218%22 r=%225%22 fill=%22rgba(255,255,255,0.6)%22/%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.5)%22 stroke-width=%222%22/%3E%3C/svg%3E'">
         <div class="float-ball-badge"></div>
     </div>
 
@@ -693,9 +916,9 @@
         <!-- 头部 -->
         <div class="dialog-header">
             <div class="dialog-header-left">
-                <img src="/outputs/avatars/default_avatar.png" alt="助手" class="dialog-avatar" id="dialogAvatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%236366f1%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2240%22>AI</text></svg>'">
+                <img src="/outputs/avatars/default_avatar.png" alt="助手" class="dialog-avatar" id="dialogAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Cdefs%3E%3ClinearGradient id=%22bgGrad%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%23667eea%22/%3E%3Cstop offset=%2250%25%22 style=%22stop-color:%23764ba2%22/%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%23f093fb%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22faceGrad%22 x1=%220%25%22 y1=%220%25%22 x2=%220%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%23ffecd2%22/%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%23fcb69f%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22url(%23bgGrad)%22/%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.3)%22 stroke-width=%221%22/%3E%3Cellipse cx=%2250%22 cy=%2252%22 rx=%2228%22 ry=%2230%22 fill=%22url(%23faceGrad)%22/%3E%3Cellipse cx=%2250%22 cy=%2230%22 rx=%2226%22 ry=%2216%22 fill=%22%234a3f35%22/%3E%3Cellipse cx=%2235%22 cy=%2235%22 rx=%228%22 ry=%2212%22 fill=%22%234a3f35%22/%3E%3Cellipse cx=%2265%22 cy=%2235%22 rx=%228%22 ry=%2212%22 fill=%22%234a3f35%22/%3E%3Cpath d=%22M28 38 Q35 28 50 30 Q65 28 72 38 Q65 35 50 37 Q35 35 28 38%22 fill=%22%234a3f35%22/%3E%3Cellipse cx=%2238%22 cy=%2252%22 rx=%225%22 ry=%226%22 fill=%22%232d2d2d%22/%3E%3Cellipse cx=%2262%22 cy=%2252%22 rx=%225%22 ry=%226%22 fill=%22%232d2d2d%22/%3E%3Ccircle cx=%2240%22 cy=%2250%22 r=%222%22 fill=%22white%22/%3E%3Ccircle cx=%2264%22 cy=%2250%22 r=%222%22 fill=%22white%22/%3E%3Cpath d=%22M32 44 Q38 42 44 44%22 fill=%22none%22 stroke=%22%234a3f35%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M56 44 Q62 42 68 44%22 fill=%22none%22 stroke=%22%234a3f35%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/%3E%3Cellipse cx=%2230%22 cy=%2258%22 rx=%225%22 ry=%223%22 fill=%22rgba(255,150,150,0.4)%22/%3E%3Cellipse cx=%2270%22 cy=%2258%22 rx=%225%22 ry=%223%22 fill=%22rgba(255,150,150,0.4)%22/%3E%3Cellipse cx=%2250%22 cy=%2258%22 rx=%222%22 ry=%221.5%22 fill=%22rgba(200,150,130,0.5)%22/%3E%3Cpath d=%22M42 66 Q50 72 58 66%22 fill=%22none%22 stroke=%22%23e57373%22 stroke-width=%222%22 stroke-linecap=%22round%22/%3E%3Ccircle cx=%2250%22 cy=%2218%22 r=%228%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.8)%22 stroke-width=%222%22/%3E%3Ccircle cx=%2250%22 cy=%2218%22 r=%225%22 fill=%22rgba(255,255,255,0.6)%22/%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.5)%22 stroke-width=%222%22/%3E%3C/svg%3E'">
                 <div class="dialog-info">
-                    <h3 id="dialogName">小美</h3>
+                    <h3 id="dialogName">小婷</h3>
                     <div class="dialog-status">
                         <div class="dialog-status-dot" id="statusDot"></div>
                         <span id="statusText">在线</span>
@@ -730,14 +953,78 @@
             <aside class="dialog-sidebar">
                 <div class="sidebar-avatar-section">
                     <div class="sidebar-avatar-container">
-                        <img src="/outputs/avatars/default_avatar.png" alt="数字人" class="sidebar-avatar" id="sidebarAvatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%236366f1%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2240%22>AI</text></svg>'">
+                        <img src="/outputs/avatars/default_avatar.png" alt="数字人" class="sidebar-avatar" id="sidebarAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Cdefs%3E%3ClinearGradient id=%22bgGrad%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%23667eea%22/%3E%3Cstop offset=%2250%25%22 style=%22stop-color:%23764ba2%22/%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%23f093fb%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22faceGrad%22 x1=%220%25%22 y1=%220%25%22 x2=%220%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%23ffecd2%22/%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%23fcb69f%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22url(%23bgGrad)%22/%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.3)%22 stroke-width=%221%22/%3E%3Cellipse cx=%2250%22 cy=%2252%22 rx=%2228%22 ry=%2230%22 fill=%22url(%23faceGrad)%22/%3E%3Cellipse cx=%2250%22 cy=%2230%22 rx=%2226%22 ry=%2216%22 fill=%22%234a3f35%22/%3E%3Cellipse cx=%2235%22 cy=%2235%22 rx=%228%22 ry=%2212%22 fill=%22%234a3f35%22/%3E%3Cellipse cx=%2265%22 cy=%2235%22 rx=%228%22 ry=%2212%22 fill=%22%234a3f35%22/%3E%3Cpath d=%22M28 38 Q35 28 50 30 Q65 28 72 38 Q65 35 50 37 Q35 35 28 38%22 fill=%22%234a3f35%22/%3E%3Cellipse cx=%2238%22 cy=%2252%22 rx=%225%22 ry=%226%22 fill=%22%232d2d2d%22/%3E%3Cellipse cx=%2262%22 cy=%2252%22 rx=%225%22 ry=%226%22 fill=%22%232d2d2d%22/%3E%3Ccircle cx=%2240%22 cy=%2250%22 r=%222%22 fill=%22white%22/%3E%3Ccircle cx=%2264%22 cy=%2250%22 r=%222%22 fill=%22white%22/%3E%3Cpath d=%22M32 44 Q38 42 44 44%22 fill=%22none%22 stroke=%22%234a3f35%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M56 44 Q62 42 68 44%22 fill=%22none%22 stroke=%22%234a3f35%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/%3E%3Cellipse cx=%2230%22 cy=%2258%22 rx=%225%22 ry=%223%22 fill=%22rgba(255,150,150,0.4)%22/%3E%3Cellipse cx=%2270%22 cy=%2258%22 rx=%225%22 ry=%223%22 fill=%22rgba(255,150,150,0.4)%22/%3E%3Cellipse cx=%2250%22 cy=%2258%22 rx=%222%22 ry=%221.5%22 fill=%22rgba(200,150,130,0.5)%22/%3E%3Cpath d=%22M42 66 Q50 72 58 66%22 fill=%22none%22 stroke=%22%23e57373%22 stroke-width=%222%22 stroke-linecap=%22round%22/%3E%3Ccircle cx=%2250%22 cy=%2218%22 r=%228%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.8)%22 stroke-width=%222%22/%3E%3Ccircle cx=%2250%22 cy=%2218%22 r=%225%22 fill=%22rgba(255,255,255,0.6)%22/%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.5)%22 stroke-width=%222%22/%3E%3C/svg%3E'">
                         <video id="sidebarVideo" class="sidebar-avatar-video" autoplay loop muted playsinline></video>
                     </div>
-                    <div class="sidebar-name" id="sidebarName">小美</div>
+                    <div class="sidebar-name" id="sidebarName">小婷</div>
                 </div>
 
                 <div class="sidebar-settings">
-                    <h4>设置</h4>
+                    <h4><span style="margin-right: 4px;">⚙</span>设置</h4>
+
+                    <div class="setting-item">
+                        <label>调用模式</label>
+                        <select id="callModeSelect" onchange="handleCallModeChange()">
+                            <option value="ollamaAPI">Ollama API</option>
+                            <option value="deepseekAPI">DeepSeek API</option>
+                            <option value="zeroToken">免Token调用</option>
+                        </select>
+                    </div>
+                    
+                    <!-- DeepSeek 模型选择 -->
+                    <div class="setting-item" id="deepseekModelItem" style="display: none;">
+                        <label>DeepSeek模型</label>
+                        <select id="deepseekModelSelect" onchange="handleDeepseekModelChange()">
+                            <option value="deepseek-chat">DeepSeek Chat</option>
+                            <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+                        </select>
+                    </div>
+
+                    <!-- Ollama 模型选择 -->
+                    <div class="setting-item" id="ollamaModelItem">
+                        <label>Ollama模型</label>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <select id="ollamaModelSelect" onchange="handleOllamaModelChange()" style="flex: 1;">
+                                <option value="">加载中...</option>
+                            </select>
+                            <button onclick="loadOllamaModels()" style="padding: 6px 10px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;" title="刷新模型列表">⟳</button>
+                        </div>
+                        <div id="ollamaModelStatus" style="font-size: 11px; color: #888; margin-top: 4px;"></div>
+                    </div>
+
+                    <div class="setting-item" id="zeroTokenPlatformItem" style="display: none;">
+                        <label>ZeroToken平台</label>
+                        <select id="zeroTokenPlatformSelect" onchange="handlePlatformChange()">
+                            <option value="deepseek">DeepSeek</option>
+                            <option value="doubao">豆包</option>
+                            <option value="claude">Claude</option>
+                            <option value="kimi">Kimi</option>
+                            <option value="qwen">千问</option>
+                            <option value="glm">智谱清言</option>
+                        </select>
+                    </div>
+
+                    <!-- 凭证配置区域 -->
+                    <div class="setting-item" id="credentialConfigItem" style="display: none;">
+                        <label>Cookie配置</label>
+                        <div style="margin-top: 8px;">
+                            <textarea id="cookieInput" 
+                                placeholder="请粘贴从浏览器获取的Cookie..." 
+                                rows="3"
+                                style="width: 100%; padding: 8px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 12px; resize: vertical; font-family: monospace;"></textarea>
+                            <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center;">
+                                <button onclick="saveCredentials()" style="padding: 6px 12px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">保存凭证</button>
+                                <button onclick="testCredentials()" style="padding: 6px 12px; background: #52c41a; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">测试连接</button>
+                                <a href="#" onclick="showCredentialHelp(); return false;" style="font-size: 12px; color: #1890ff; text-decoration: none;">获取帮助</a>
+                            </div>
+                            <div id="credentialStatus" style="margin-top: 6px; font-size: 12px; color: #666;"></div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item" id="gatewayStatusItem" style="display: none;">
+                        <label>凭证状态</label>
+                        <div id="gatewayStatus" style="font-size: 12px; color: #666;">检查中...</div>
+                    </div>
 
                     <div class="setting-item">
                         <label>语音选择</label>
@@ -763,6 +1050,14 @@
                         <span>生成视频</span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="generateVideo" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-item">
+                        <span>联网搜索</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="enableSearch" checked>
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
@@ -820,6 +1115,8 @@
                     <div class="action-buttons">
                         <button class="action-btn" onclick="clearHistory()">清空对话</button>
                         <button class="action-btn" onclick="exportChat()">导出对话</button>
+                        <button class="action-btn" onclick="showVideoModal()" style="border-color: var(--primary-color); color: var(--primary-color);">生成视频</button>
+                        <button class="action-btn" onclick="showFaraModal()" style="border-color: #22c55e; color: #22c55e;">🌐 网络操作</button>
                     </div>
                 </div>
             </main>
@@ -900,6 +1197,128 @@
         </div>
     </div>
 
+    <!-- Video Generation Modal -->
+    <div class="modal-overlay" id="videoModal">
+        <div class="modal" style="max-width: 600px;">
+            <h2>AI视频生成</h2>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+                详细描述您想生成的视频内容，包括动作、外貌、镜头角度、环境细节等
+            </p>
+            <div class="setting-item">
+                <label>生成源</label>
+                <select id="videoProvider" onchange="onProviderChange()" style="width:100%;padding:8px 12px;background:var(--bg-color);border:1px solid var(--border-color);border-radius:6px;color:var(--text-color);font-size:13px;">
+                    <option value="siliconflow">硅基流动模型生成 (云端API)</option>
+                    <option value="animatediff">AnimateDiff本地生成 (适合4GB显存)</option>
+                    <option value="local">SVD本地模型生成 (需6GB+显存)</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label>视频描述</label>
+                <textarea id="videoPrompt" placeholder="例如：一只小羊驼在草原上跳跃，阳光照耀，毛发飘扬..." style="width:100%;height:120px;padding:10px;background:var(--bg-color);border:1px solid var(--border-color);border-radius:8px;color:var(--text-color);font-size:13px;resize:none;font-family:inherit;"></textarea>
+            </div>
+            <div class="modal-grid" style="margin-top: 12px;">
+                <div class="setting-item" id="videoSizeContainer">
+                    <label>视频比例</label>
+                    <select id="videoSize">
+                        <option value="1280x720">横屏 (16:9)</option>
+                        <option value="720x1280">竖屏 (9:16)</option>
+                        <option value="960x960">方形 (1:1)</option>
+                    </select>
+                </div>
+                <div class="setting-item" id="localResolutionContainer" style="display:none;">
+                    <label>分辨率</label>
+                    <select id="localResolution">
+                        <option value="512x512">512x512</option>
+                        <option value="768x768">768x768</option>
+                        <option value="1024x576">1024x576 (16:9)</option>
+                        <option value="576x1024">576x1024 (9:16)</option>
+                    </select>
+                </div>
+                <div class="setting-item" id="negativePromptContainer">
+                    <label>负面提示词 (可选)</label>
+                    <input type="text" id="videoNegativePrompt" placeholder="模糊, 低质量, 变形" style="width:100%;padding:8px 12px;background:var(--bg-color);border:1px solid var(--border-color);border-radius:6px;color:var(--text-color);font-size:13px;">
+                </div>
+            </div>
+            <div id="videoProgress" style="display:none; margin-top: 16px; padding: 12px; background: var(--bg-color); border-radius: 8px; text-align: center;">
+                <div class="loading-dots" style="justify-content: center;"><span></span><span></span><span></span></div>
+                <p style="margin-top: 8px; font-size: 13px; color: var(--text-muted);" id="progressText">正在生成视频，请稍候...</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="hideVideoModal()">取消</button>
+                <button class="btn-primary" id="generateVideoBtn" onclick="generateVideoFromText()">生成视频</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fara Network Operation Modal -->
+    <div class="modal-overlay" id="faraModal">
+        <div class="modal" style="max-width: 600px;">
+            <h2>🌐 网络操作助手</h2>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+                使用 Fara-7B 模型执行网络操作任务，如网页搜索、表单填写、文件下载等
+            </p>
+            
+            <div class="setting-item">
+                <label>选择任务类型</label>
+                <select id="faraTaskType" onchange="onFaraTaskChange()" style="width:100%;padding:8px 12px;background:var(--bg-color);border:1px solid var(--border-color);border-radius:6px;color:var(--text-color);font-size:13px;">
+                    <option value="search">网页搜索</option>
+                    <option value="open_website">打开网站</option>
+                    <option value="fill_form">填写表单</option>
+                    <option value="download">下载文件</option>
+                    <option value="screenshot">截图保存</option>
+                    <option value="scroll_read">滚动阅读</option>
+                    <option value="login">自动登录</option>
+                    <option value="custom">自定义任务</option>
+                </select>
+            </div>
+            
+            <div id="faraTaskInputs" style="margin-top: 12px;">
+                <!-- 动态任务输入区域 -->
+            </div>
+            
+            <div class="setting-item" style="margin-top: 12px;">
+                <label>任务描述</label>
+                <textarea id="faraTaskInput" placeholder="描述您想要执行的网络操作任务..." style="width:100%;height:100px;padding:10px;background:var(--bg-color);border:1px solid var(--border-color);border-radius:8px;color:var(--text-color);font-size:13px;resize:none;font-family:inherit;"></textarea>
+            </div>
+            
+            <div class="setting-item" style="margin-top: 12px;">
+                <label>上下文信息 (可选)</label>
+                <textarea id="faraContextInput" placeholder="提供额外的上下文信息，如页面状态、特定要求等..." style="width:100%;height:60px;padding:10px;background:var(--bg-color);border:1px solid var(--border-color);border-radius:8px;color:var(--text-color);font-size:13px;resize:none;font-family:inherit;"></textarea>
+            </div>
+            
+            <div id="faraProgress" style="display:none; margin-top: 16px; padding: 12px; background: var(--bg-color); border-radius: 8px;">
+                <div class="loading-dots" style="justify-content: center;"><span></span><span></span><span></span></div>
+                <p style="margin-top: 8px; font-size: 13px; color: var(--text-muted); text-align: center;" id="faraProgressText">正在分析任务并生成操作步骤...</p>
+            </div>
+            
+            <div id="faraResult" style="display:none; margin-top: 16px; padding: 12px; background: var(--bg-color); border-radius: 8px; max-height: 300px; overflow-y: auto;">
+                <h4 style="font-size: 14px; margin-bottom: 8px; color: var(--primary-color);">操作步骤</h4>
+                <div id="faraResultContent" style="font-size: 13px; line-height: 1.6; white-space: pre-wrap;"></div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="hideFaraModal()">关闭</button>
+                <button class="btn-primary" id="executeFaraBtn" onclick="executeFaraTask()">执行任务</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 意图确认对话框 -->
+    <div class="modal-overlay" id="intentConfirmModal" style="display: none;">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border-color);">
+                <h3 style="margin: 0; font-size: 18px;">🎯 意图识别</h3>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div id="intentConfirmMessage" style="white-space: pre-wrap; line-height: 1.6; margin-bottom: 20px;"></div>
+            </div>
+            <div class="modal-actions" style="padding: 16px 20px; border-top: 1px solid var(--border-color); display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn-secondary" id="intentCancelBtn">取消，继续对话</button>
+                <button class="btn-primary" id="intentConfirmBtn">确认执行</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
@@ -917,24 +1336,440 @@
         let mediaRecorder = null;
         let audioChunks = [];
         let isDialogExpanded = false;
+        let frameLoadTimeout = null;
+        let currentCallMode = 'ollamaAPI';
+        let currentPlatform = 'deepseek';
+        let currentOllamaModel = '';
+        let currentDeepseekModel = 'deepseek-chat';
+        
+        // 意图识别相关状态
+        let pendingIntent = null;  // 待确认的意图
 
-        // Elements
-        const floatBall = document.getElementById('floatBall');
-        const floatDialog = document.getElementById('floatDialog');
-        const dialogOverlay = document.getElementById('dialogOverlay');
-        const chatMessages = document.getElementById('chatMessages');
-        const messageInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const voiceBtn = document.getElementById('voiceBtn');
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-        const recordingIndicator = document.getElementById('recordingIndicator');
+        // 加载 Ollama 模型列表
+        async function loadOllamaModels() {
+            const select = document.getElementById('ollamaModelSelect');
+            const status = document.getElementById('ollamaModelStatus');
+            
+            select.innerHTML = '<option value="">加载中...</option>';
+            status.textContent = '正在连接 Ollama...';
+            status.style.color = '#888';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/ollama/models`);
+                const data = await response.json();
+                
+                select.innerHTML = '';
+                
+                if (data.success && data.models.length > 0) {
+                    for (const model of data.models) {
+                        const option = document.createElement('option');
+                        option.value = model.name;
+                        option.textContent = model.name;
+                        select.appendChild(option);
+                    }
+                    
+                    // 恢复上次选择的模型
+                    const savedModel = localStorage.getItem('ollamaModel');
+                    if (savedModel && data.models.some(m => m.name === savedModel)) {
+                        select.value = savedModel;
+                        currentOllamaModel = savedModel;
+                    } else {
+                        currentOllamaModel = data.models[0].name;
+                    }
+                    
+                    status.textContent = `已加载 ${data.models.length} 个模型`;
+                    status.style.color = '#52c41a';
+                } else {
+                    select.innerHTML = '<option value="">无可用模型</option>';
+                    status.textContent = data.error || 'Ollama 服务未运行或无模型';
+                    status.style.color = '#ff4d4f';
+                }
+            } catch (error) {
+                select.innerHTML = '<option value="">连接失败</option>';
+                status.textContent = '无法连接到 Ollama 服务';
+                status.style.color = '#ff4d4f';
+                console.error('加载Ollama模型失败:', error);
+            }
+        }
+
+        // 处理 Ollama 模型变化
+        function handleOllamaModelChange() {
+            const model = document.getElementById('ollamaModelSelect').value;
+            currentOllamaModel = model;
+            localStorage.setItem('ollamaModel', model);
+            showToast(`已选择模型: ${model}`);
+        }
+
+        // 处理调用模式变化
+        function handleCallModeChange() {
+            const callMode = document.getElementById('callModeSelect').value;
+            currentCallMode = callMode;
+
+            const ollamaModelItem = document.getElementById('ollamaModelItem');
+            const deepseekModelItem = document.getElementById('deepseekModelItem');
+            const platformItem = document.getElementById('zeroTokenPlatformItem');
+            const credentialItem = document.getElementById('credentialConfigItem');
+            const gatewayItem = document.getElementById('gatewayStatusItem');
+            
+            // 隐藏所有模式相关项
+            ollamaModelItem.style.display = 'none';
+            deepseekModelItem.style.display = 'none';
+            platformItem.style.display = 'none';
+            credentialItem.style.display = 'none';
+            gatewayItem.style.display = 'none';
+            
+            if (callMode === 'zeroToken') {
+                platformItem.style.display = 'block';
+                credentialItem.style.display = 'block';
+                gatewayItem.style.display = 'block';
+                loadZeroTokenPlatforms();
+                loadCredentials();
+            } else if (callMode === 'deepseekAPI') {
+                deepseekModelItem.style.display = 'block';
+                // 恢复上次选择的模型
+                const savedModel = localStorage.getItem('deepseekModel');
+                if (savedModel) {
+                    document.getElementById('deepseekModelSelect').value = savedModel;
+                    currentDeepseekModel = savedModel;
+                }
+            } else {
+                ollamaModelItem.style.display = 'block';
+                loadOllamaModels();
+            }
+
+            // 保存到本地存储
+            localStorage.setItem('callMode', callMode);
+
+            // 显示提示
+            const modeNames = {
+                'zeroToken': '免Token',
+                'deepseekAPI': 'DeepSeek API',
+                'ollamaAPI': 'Ollama API'
+            };
+            showToast(`已切换到 ${modeNames[callMode]} 模式`);
+        }
+
+        // 处理 DeepSeek 模型变化
+        function handleDeepseekModelChange() {
+            const model = document.getElementById('deepseekModelSelect').value;
+            currentDeepseekModel = model;
+            localStorage.setItem('deepseekModel', model);
+            showToast(`已选择模型: ${model}`);
+        }
+
+        // 处理平台变化
+        function handlePlatformChange() {
+            const platform = document.getElementById('zeroTokenPlatformSelect').value;
+            currentPlatform = platform;
+            localStorage.setItem('zeroTokenPlatform', platform);
+            loadCredentials(); // 加载该平台的凭证
+            showToast(`已选择平台: ${platform}`);
+        }
+
+        // 加载ZeroToken平台列表
+        async function loadZeroTokenPlatforms() {
+            try {
+                const response = await fetch(`${API_BASE}/api/zerotoken/platforms`);
+                const data = await response.json();
+
+                const select = document.getElementById('zeroTokenPlatformSelect');
+                select.innerHTML = '';
+
+                for (const platform of data.platforms) {
+                    const option = document.createElement('option');
+                    option.value = platform.id;
+                    option.textContent = platform.name + (platform.has_credentials ? ' ✓' : '');
+                    option.dataset.hasCredentials = platform.has_credentials;
+                    select.appendChild(option);
+                }
+
+                // 恢复上次选择的平台
+                const savedPlatform = localStorage.getItem('zeroTokenPlatform');
+                if (savedPlatform) {
+                    select.value = savedPlatform;
+                    currentPlatform = savedPlatform;
+                }
+                
+                // 加载凭证
+                loadCredentials();
+            } catch (error) {
+                console.error('Failed to load ZeroToken platforms:', error);
+            }
+        }
+
+        // 加载凭证
+        async function loadCredentials() {
+            const platform = document.getElementById('zeroTokenPlatformSelect').value;
+            const statusDiv = document.getElementById('credentialStatus');
+            const cookieInput = document.getElementById('cookieInput');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/zerotoken/credentials/${platform}`);
+                const data = await response.json();
+                
+                if (data.has_credentials) {
+                    statusDiv.innerHTML = '<span style="color: #52c41a;">● 已配置</span>';
+                    // 从本地存储加载已保存的cookie（不显示完整cookie，只显示状态）
+                    const savedCookie = localStorage.getItem(`cookie_${platform}`);
+                    if (savedCookie) {
+                        cookieInput.value = savedCookie;
+                    } else {
+                        cookieInput.placeholder = '凭证已保存，输入新值将覆盖';
+                    }
+                } else {
+                    statusDiv.innerHTML = '<span style="color: #faad14;">● 未配置</span> - 请输入Cookie';
+                    cookieInput.value = '';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<span style="color: #f5222d;">● 检查失败</span>';
+            }
+        }
+
+        // 保存凭证
+        async function saveCredentials() {
+            const platform = document.getElementById('zeroTokenPlatformSelect').value;
+            const cookie = document.getElementById('cookieInput').value.trim();
+            
+            if (!cookie) {
+                showToast('请输入Cookie', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/zerotoken/credentials/${platform}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cookie: cookie })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('凭证保存成功！');
+                    localStorage.setItem(`cookie_${platform}`, cookie);
+                    document.getElementById('credentialStatus').innerHTML = '<span style="color: #52c41a;">● 已配置</span>';
+                    // 更新平台列表显示
+                    loadZeroTokenPlatforms();
+                } else {
+                    showToast('保存失败: ' + (data.detail || '未知错误'), 'error');
+                }
+            } catch (error) {
+                showToast('保存失败: ' + error.message, 'error');
+            }
+        }
+
+        // 测试凭证
+        async function testCredentials() {
+            const platform = document.getElementById('zeroTokenPlatformSelect').value;
+            const statusDiv = document.getElementById('credentialStatus');
+            
+            statusDiv.innerHTML = '<span style="color: #1890ff;">● 测试中...</span>';
+            
+            try {
+                // 发送一个简单的测试消息
+                const response = await fetch(`${API_BASE}/api/chat/test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: '你好',
+                        zero_token_platform: platform,
+                        test_mode: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.innerHTML = '<span style="color: #52c41a;">● 连接成功！</span>';
+                    showToast('凭证有效，连接成功！');
+                } else {
+                    statusDiv.innerHTML = '<span style="color: #f5222d;">● 连接失败: ' + (data.error || '未知错误') + '</span>';
+                    showToast('连接失败，请检查Cookie', 'error');
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<span style="color: #f5222d;">● 测试失败</span>';
+                showToast('测试失败: ' + error.message, 'error');
+            }
+        }
+
+        // 显示凭证帮助
+        function showCredentialHelp() {
+            const platform = document.getElementById('zeroTokenPlatformSelect').value;
+            const loginUrls = {
+                'deepseek': 'https://chat.deepseek.com',
+                'doubao': 'https://www.doubao.com',
+                'claude': 'https://claude.ai',
+                'kimi': 'https://kimi.moonshot.cn',
+                'qwen': 'https://tongyi.aliyun.com',
+                'glm': 'https://chatglm.cn'
+            };
+            
+            const helpText = `获取 ${platform.toUpperCase()} Cookie 的步骤：
+
+1. 打开浏览器访问: ${loginUrls[platform] || '该平台网站'}
+2. 登录你的账号
+3. 按 F12 打开开发者工具
+4. 切换到 Network（网络）标签
+5. 在页面上发送一条消息或刷新页面
+6. 找到任意请求，查看 Request Headers
+7. 复制 Cookie 字段的完整内容
+8. 粘贴到输入框中并保存
+
+注意：Cookie 包含敏感信息，请勿分享给他人！`;
+            
+            alert(helpText);
+        }
+
+        // 检查 Gateway 状态（保留兼容性）
+        async function checkGatewayStatus() {
+            const statusDiv = document.getElementById('gatewayStatus');
+            const platform = document.getElementById('zeroTokenPlatformSelect')?.value;
+            
+            if (!platform) {
+                statusDiv.innerHTML = '<span style="color: #666;">请选择平台</span>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/zerotoken/credentials/${platform}`);
+                const data = await response.json();
+
+                if (data.has_credentials) {
+                    statusDiv.innerHTML = `<span style="color: #52c41a;">● 已配置</span>`;
+                } else {
+                    statusDiv.innerHTML = `<span style="color: #faad14;">● 未配置</span> <a href="#" onclick="showCredentialHelp(); return false;" style="color: #1890ff;">获取帮助</a>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<span style="color: #f5222d;">● 检查失败</span>`;
+            }
+        }
+
+        // 初始化时恢复设置
+        function initSettings() {
+            const savedCallMode = localStorage.getItem('callMode');
+            if (savedCallMode) {
+                document.getElementById('callModeSelect').value = savedCallMode;
+                currentCallMode = savedCallMode;
+
+                // 隐藏所有模式相关项
+                document.getElementById('ollamaModelItem').style.display = 'none';
+                document.getElementById('deepseekModelItem').style.display = 'none';
+                document.getElementById('zeroTokenPlatformItem').style.display = 'none';
+                document.getElementById('credentialConfigItem').style.display = 'none';
+                document.getElementById('gatewayStatusItem').style.display = 'none';
+
+                if (savedCallMode === 'zeroToken') {
+                    document.getElementById('zeroTokenPlatformItem').style.display = 'block';
+                    document.getElementById('credentialConfigItem').style.display = 'block';
+                    document.getElementById('gatewayStatusItem').style.display = 'block';
+                    loadZeroTokenPlatforms();
+                } else if (savedCallMode === 'deepseekAPI') {
+                    document.getElementById('deepseekModelItem').style.display = 'block';
+                    // 恢复上次选择的模型
+                    const savedModel = localStorage.getItem('deepseekModel');
+                    if (savedModel) {
+                        document.getElementById('deepseekModelSelect').value = savedModel;
+                        currentDeepseekModel = savedModel;
+                    }
+                } else {
+                    // Ollama API 模式，加载模型列表
+                    document.getElementById('ollamaModelItem').style.display = 'block';
+                    loadOllamaModels();
+                }
+            } else {
+                // 默认加载 Ollama 模型
+                loadOllamaModels();
+            }
+
+            const savedPlatform = localStorage.getItem('zeroTokenPlatform');
+            if (savedPlatform) {
+                currentPlatform = savedPlatform;
+            }
+
+            const savedModel = localStorage.getItem('ollamaModel');
+            if (savedModel) {
+                currentOllamaModel = savedModel;
+            }
+        }
+
+
+        // iframe 加载处理
+        function onFrameLoad() {
+            clearTimeout(frameLoadTimeout);
+            try {
+                const iframe = document.getElementById('mainFrame');
+                // 尝试访问 iframe 内容，如果跨域会抛出错误
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                // 如果能访问，检查是否是空白页或错误页
+                if (doc && doc.body && doc.body.innerHTML.length < 100) {
+                    showFallback();
+                }
+            } catch (e) {
+                // 跨域限制，说明页面可能正常加载了
+                console.log('iframe 跨域限制，页面可能正常加载');
+            }
+        }
+
+        function onFrameError() {
+            showFallback();
+        }
+
+        function showFallback() {
+            document.getElementById('mainFrame').style.display = 'none';
+            document.getElementById('fallbackContainer').style.display = 'flex';
+        }
+
+        function retryFrame() {
+            document.getElementById('fallbackContainer').style.display = 'none';
+            const iframe = document.getElementById('mainFrame');
+            iframe.style.display = 'block';
+            iframe.src = '/proxy/page?t=' + Date.now();
+
+            // 设置超时
+            frameLoadTimeout = setTimeout(() => {
+                showFallback();
+            }, 10000);
+        }
+
+        // 设置初始超时检测
+        setTimeout(() => {
+            const iframe = document.getElementById('mainFrame');
+            if (iframe.style.display !== 'none') {
+                // 检查是否加载成功
+                // 由于跨域限制，我们无法直接判断，所以保持显示
+            }
+        }, 15000);
+
+        // Elements (将在 init 中初始化)
+        let floatBall, floatDialog, dialogOverlay, chatMessages, messageInput;
+        let sendBtn, voiceBtn, statusDot, statusText, recordingIndicator;
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        function init() {
+            // 获取元素引用
+            floatBall = document.getElementById('floatBall');
+            floatDialog = document.getElementById('floatDialog');
+            dialogOverlay = document.getElementById('dialogOverlay');
+            chatMessages = document.getElementById('chatMessages');
+            messageInput = document.getElementById('messageInput');
+            sendBtn = document.getElementById('sendBtn');
+            voiceBtn = document.getElementById('voiceBtn');
+            statusDot = document.getElementById('statusDot');
+            statusText = document.getElementById('statusText');
+            recordingIndicator = document.getElementById('recordingIndicator');
+            
+            // iframe 事件监听
+            const mainFrame = document.getElementById('mainFrame');
+            if (mainFrame) {
+                mainFrame.addEventListener('load', onFrameLoad);
+                mainFrame.addEventListener('error', onFrameError);
+            }
+            
+            // 初始化功能
             checkStatus();
             connectWebSocket();
             loadVoices();
+            initSettings();
 
             // Auto resize textarea
             messageInput.addEventListener('input', function() {
@@ -953,15 +1788,23 @@
             sendBtn.addEventListener('click', sendMessage);
             voiceBtn.addEventListener('click', toggleRecording);
 
-            // Float ball click
-            floatBall.addEventListener('click', expandDialog);
+            // Float ball drag functionality
+            initFloatBallDrag();
 
             // Overlay click to collapse
             dialogOverlay.addEventListener('click', collapseDialog);
 
             // Setup avatar upload
             document.getElementById('avatarFileInput').addEventListener('change', handleAvatarUpload);
-        });
+        }
+
+        // 确保 DOM 加载后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            // DOM 已经加载完成
+            init();
+        }
 
         // Expand dialog
         function expandDialog() {
@@ -969,6 +1812,176 @@
             floatDialog.classList.add('active');
             dialogOverlay.classList.add('active');
             isDialogExpanded = true;
+        }
+
+        // Float ball drag functionality
+        function initFloatBallDrag() {
+            let isDragging = false;
+            let hasMoved = false;
+            let startX, startY, startLeft, startBottom;
+            const BALL_SIZE = 64;
+            const MARGIN = 10;
+
+            // 检查元素是否存在
+            if (!floatBall) {
+                console.error('floatBall element not found');
+                return;
+            }
+
+            // Load saved position
+            const savedPosition = localStorage.getItem('floatBallPosition');
+            if (savedPosition) {
+                try {
+                    const pos = JSON.parse(savedPosition);
+                    applyPosition(pos.left, pos.bottom);
+                } catch (e) {
+                    console.error('Failed to parse saved position:', e);
+                }
+            }
+
+            function applyPosition(left, bottom) {
+                floatBall.style.left = left + 'px';
+                floatBall.style.right = 'auto';
+                floatBall.style.bottom = bottom + 'px';
+            }
+
+            function savePosition(left, bottom) {
+                localStorage.setItem('floatBallPosition', JSON.stringify({ left, bottom }));
+            }
+
+            function snapToEdge(left) {
+                const windowWidth = window.innerWidth;
+                const centerX = windowWidth / 2;
+
+                floatBall.classList.add('snapping');
+
+                if (left + BALL_SIZE / 2 < centerX) {
+                    // Snap to left edge
+                    floatBall.style.left = MARGIN + 'px';
+                    floatBall.style.right = 'auto';
+                    savePosition(MARGIN, parseFloat(floatBall.style.bottom));
+                } else {
+                    // Snap to right edge
+                    floatBall.style.left = 'auto';
+                    floatBall.style.right = MARGIN + 'px';
+                    savePosition(windowWidth - MARGIN - BALL_SIZE, parseFloat(floatBall.style.bottom));
+                }
+
+                setTimeout(() => floatBall.classList.remove('snapping'), 300);
+            }
+
+            // Mouse events
+            floatBall.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                hasMoved = false;
+                floatBall.classList.add('dragging');
+
+                startX = e.clientX;
+                startY = e.clientY;
+
+                const rect = floatBall.getBoundingClientRect();
+                startLeft = rect.left;
+                startBottom = window.innerHeight - rect.bottom;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+
+                const deltaX = e.clientX - startX;
+                const deltaY = startY - e.clientY; // Inverted for bottom positioning
+
+                const newLeft = Math.max(MARGIN, Math.min(window.innerWidth - BALL_SIZE - MARGIN, startLeft + deltaX));
+                const newBottom = Math.max(MARGIN, Math.min(window.innerHeight - BALL_SIZE - MARGIN, startBottom + deltaY));
+
+                if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                    hasMoved = true;
+                }
+
+                applyPosition(newLeft, newBottom);
+            });
+
+            document.addEventListener('mouseup', (e) => {
+                if (!isDragging) return;
+
+                const wasDragging = isDragging;
+                const hadMoved = hasMoved;
+                
+                isDragging = false;
+                floatBall.classList.remove('dragging');
+
+                if (hadMoved) {
+                    // Snap to nearest edge
+                    const rect = floatBall.getBoundingClientRect();
+                    snapToEdge(rect.left);
+                } else {
+                    // It was a click, expand dialog
+                    expandDialog();
+                }
+            });
+
+            // Touch events for mobile
+            floatBall.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                isDragging = true;
+                hasMoved = false;
+                floatBall.classList.add('dragging');
+
+                startX = touch.clientX;
+                startY = touch.clientY;
+
+                const rect = floatBall.getBoundingClientRect();
+                startLeft = rect.left;
+                startBottom = window.innerHeight - rect.bottom;
+
+                e.preventDefault();
+            }, { passive: false });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - startX;
+                const deltaY = startY - touch.clientY;
+
+                const newLeft = Math.max(MARGIN, Math.min(window.innerWidth - BALL_SIZE - MARGIN, startLeft + deltaX));
+                const newBottom = Math.max(MARGIN, Math.min(window.innerHeight - BALL_SIZE - MARGIN, startBottom + deltaY));
+
+                if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                    hasMoved = true;
+                }
+
+                applyPosition(newLeft, newBottom);
+            }, { passive: false });
+
+            document.addEventListener('touchend', (e) => {
+                if (!isDragging) return;
+
+                isDragging = false;
+                floatBall.classList.remove('dragging');
+
+                if (hasMoved) {
+                    const rect = floatBall.getBoundingClientRect();
+                    snapToEdge(rect.left);
+                } else {
+                    expandDialog();
+                }
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                const rect = floatBall.getBoundingClientRect();
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
+
+                // Ensure ball stays within bounds
+                let newLeft = Math.max(MARGIN, Math.min(windowWidth - BALL_SIZE - MARGIN, rect.left));
+                let newBottom = Math.max(MARGIN, Math.min(windowHeight - BALL_SIZE - MARGIN, window.innerHeight - rect.bottom));
+
+                floatBall.classList.add('snapping');
+                applyPosition(newLeft, newBottom);
+                savePosition(newLeft, newBottom);
+                setTimeout(() => floatBall.classList.remove('snapping'), 300);
+            });
         }
 
         // Collapse dialog
@@ -1020,6 +2033,16 @@
                     appendStreamChunk(data.content);
                 } else if (data.type === 'complete') {
                     finalizeStreamMessage(data.content);
+                } else if (data.type === 'error') {
+                    const streamingMsg = document.getElementById('streaming-message');
+                    if (streamingMsg) streamingMsg.remove();
+                    isStreaming = false;
+
+                    if (data.error === 'gateway_not_running') {
+                        showToast('OpenClaw Gateway 未运行，请先启动服务', 'error');
+                    } else {
+                        showToast(`错误: ${data.message || data.error}`, 'error');
+                    }
                 }
             };
 
@@ -1028,7 +2051,6 @@
             };
 
             ws.onclose = () => {
-                console.log('WebSocket disconnected');
                 setTimeout(connectWebSocket, 3000);
             };
         }
@@ -1063,17 +2085,625 @@
             messageInput.style.height = 'auto';
             sendBtn.disabled = true;
 
-            const streamMode = document.getElementById('streamMode').checked;
-            const generateVideo = document.getElementById('generateVideo').checked;
+            try {
+                // 1. 先进行意图识别
+                const intentResponse = await fetch(`${API_BASE}/api/intent/detect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const intentData = await intentResponse.json();
+
+                if (intentData.success && intentData.data.intent !== 'chat') {
+                    // 2. 如果是web操作，先进行任务规划
+                    if (intentData.data.intent === 'web') {
+                        await planAndExecuteWebTask(text, intentData.data.params);
+                        sendBtn.disabled = false;
+                        return;
+                    }
+
+                    // 3. video、document 或 image 意图
+                    if (intentData.data.intent === 'video' || 
+                        intentData.data.intent === 'document' || 
+                        intentData.data.intent === 'image') {
+                        pendingIntent = {
+                            text: text,
+                            intent: intentData.data.intent,
+                            params: intentData.data.params
+                        };
+                        
+                        // 如果需要确认，显示确认对话框
+                        if (intentData.data.needs_confirmation) {
+                            showIntentConfirmDialog(
+                                intentData.data.confirmation_message,
+                                intentData.data.intent,
+                                intentData.data.params
+                            );
+                        } else {
+                            // 不需要确认，直接执行
+                            await executeIntent();
+                        }
+                        sendBtn.disabled = false;
+                        return;
+                    }
+                }
+
+                // 4. 普通对话，直接发送
+                await sendNormalMessage(text);
+
+            } catch (error) {
+                console.error('Send message error:', error);
+                showToast('发送失败: ' + error.message, 'error');
+                sendBtn.disabled = false;
+            }
+        }
+
+        // 规划并执行Web任务
+        async function planAndExecuteWebTask(text, params) {
+            try {
+                // 1. 显示规划中状态
+                addMessage('assistant', '🤔 正在分析任务并规划执行步骤...', false, null, null, 'text');
+
+                // 2. 请求任务规划
+                const planResponse = await fetch(`${API_BASE}/api/task/plan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, execute: false })
+                });
+
+                const planData = await planResponse.json();
+
+                // 移除规划中消息
+                const messages = document.getElementById('chatMessages');
+                if (messages.lastChild) {
+                    messages.removeChild(messages.lastChild);
+                }
+
+                if (planData.success) {
+                    // 3. 显示任务计划
+                    const planDisplay = planData.data.display_text;
+                    addMessage('assistant', planDisplay, false, null, null, 'text');
+
+                    // 4. 询问用户是否执行
+                    const confirmed = confirm('任务已规划完成，是否立即执行？\n\n点击"确定"执行任务，点击"取消"取消操作。');
+                    
+                    if (confirmed) {
+                        // 5. 执行任务
+                        await executeTaskPlan(planData.data);
+                    } else {
+                        addMessage('assistant', '❌ 任务已取消', false, null, null, 'text');
+                    }
+                } else {
+                    addMessage('assistant', '❌ 任务规划失败', false, null, null, 'text');
+                }
+
+            } catch (error) {
+                console.error('Plan web task error:', error);
+                addMessage('assistant', '❌ 任务规划失败: ' + error.message, false, null, null, 'text');
+            }
+        }
+
+        // 执行任务计划
+        let browserWindow = null; // 保存打开的浏览器窗口引用
+
+        async function executeTaskPlan(planData) {
+            try {
+                addMessage('assistant', '🚀 开始执行任务...', false, null, null, 'text');
+
+                let executionLog = [];
+                let finalResult = null;
+                let taskResults = {}; // 保存每个任务的执行结果
+
+                // 按顺序执行任务
+                for (const task of planData.tasks) {
+                    // 将前置任务的结果传递给当前任务
+                    task._prev_results = {};
+                    for (const depId of (task.dependencies || [])) {
+                        if (taskResults[depId]) {
+                            task._prev_results[depId] = taskResults[depId];
+                        }
+                    }
+                    
+                    const taskResult = await executeTask(task, executionLog);
+                    taskResults[task.id] = taskResult;
+                    
+                    if (task.type === 'summarize') {
+                        finalResult = taskResult;
+                    }
+                }
+
+                // 移除执行中消息
+                const messages = document.getElementById('chatMessages');
+                if (messages.lastChild) {
+                    messages.removeChild(messages.lastChild);
+                }
+
+                // 显示执行结果
+                let resultMessage = `✅ 任务执行完成！\n\n`;
+                resultMessage += `📋 执行步骤：\n`;
+                executionLog.forEach((log, i) => {
+                    resultMessage += `${i + 1}. ${log}\n`;
+                });
+
+                if (finalResult && typeof finalResult === 'string') {
+                    resultMessage += `\n📝 执行结果：\n${finalResult}`;
+                } else if (finalResult && finalResult.summary) {
+                    resultMessage += `\n📝 执行结果：\n${finalResult.summary}`;
+                } else if (taskResults['task_1']?.results) {
+                    // 如果有搜索结果但没有总结，直接显示搜索结果
+                    const results = taskResults['task_1'].results;
+                    if (results && results.length > 0) {
+                        resultMessage += `\n🔍 搜索结果：\n`;
+                        results.slice(0, 5).forEach((r, i) => {
+                            resultMessage += `${i + 1}. ${r.title || r.name || '结果'}\n`;
+                            resultMessage += `   ${r.snippet || r.desc || ''}\n`;
+                        });
+                    }
+                }
+
+                addMessage('assistant', resultMessage, false, null, null, 'text');
+                showToast('✅ 任务执行成功', 'success');
+
+            } catch (error) {
+                console.error('Execute task plan error:', error);
+                addMessage('assistant', '❌ 任务执行失败: ' + error.message, false, null, null, 'text');
+                showToast('执行失败', 'error');
+            }
+        }
+
+        // 执行单个任务
+        async function executeTask(task, executionLog) {
+            switch (task.type) {
+                case 'open_browser':
+                    // 打开新的浏览器标签页
+                    browserWindow = window.open('about:blank', '_blank');
+                    executionLog.push('✅ 已打开新浏览器标签页');
+                    return { status: 'success', message: '浏览器已打开' };
+
+                case 'navigate_url':
+                    const url = task.params.url || 'https://www.baidu.com';
+                    if (browserWindow) {
+                        browserWindow.location.href = url;
+                    } else {
+                        browserWindow = window.open(url, '_blank');
+                    }
+                    executionLog.push(`✅ 已导航到: ${url}`);
+                    return { status: 'success', url: url };
+
+                case 'input_text':
+                    const text = task.params.text || '';
+                    // 构建搜索URL
+                    if (text && browserWindow) {
+                        const searchUrl = `https://www.baidu.com/s?wd=${encodeURIComponent(text)}`;
+                        browserWindow.location.href = searchUrl;
+                        executionLog.push(`✅ 已搜索: "${text}"`);
+                    }
+                    return { status: 'success', text: text };
+
+                case 'click_element':
+                    executionLog.push(`⚠️ 点击操作需要手动完成: ${task.params.selector}`);
+                    return { status: 'manual', message: '需要手动点击' };
+
+                case 'search_web':
+                    const query = task.params.text || task.params.query || '';
+                    if (query) {
+                        // 调用后端真正执行搜索
+                        executionLog.push(`🔄 正在搜索: "${query}"...`);
+                        try {
+                            const searchResponse = await fetch(`${API_BASE}/api/task/execute`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    plan_id: 'search',
+                                    tasks: [task]
+                                })
+                            });
+                            const searchData = await searchResponse.json();
+                            
+                            // 同时在浏览器中打开搜索页面
+                            const searchUrl = `https://www.baidu.com/s?wd=${encodeURIComponent(query)}`;
+                            browserWindow = window.open(searchUrl, '_blank');
+                            
+                            if (searchData.success && searchData.data.final_result) {
+                                const results = searchData.data.final_result;
+                                executionLog.push(`✅ 搜索完成，找到 ${results.count || 0} 条结果`);
+                                return { 
+                                    status: 'success', 
+                                    query: query, 
+                                    results: results.results,
+                                    count: results.count 
+                                };
+                            }
+                        } catch (e) {
+                            console.error('Search error:', e);
+                        }
+                        executionLog.push(`✅ 已在百度搜索: "${query}"`);
+                    }
+                    return { status: 'success', query: query };
+
+                case 'extract_content':
+                    // 如果前置任务有搜索结果，直接返回
+                    const prevResults = task._prev_results;
+                    if (prevResults && Object.keys(prevResults).length > 0) {
+                        for (const key in prevResults) {
+                            if (prevResults[key].results) {
+                                executionLog.push('✅ 已提取搜索结果');
+                                return { 
+                                    status: 'success', 
+                                    content: prevResults[key].results 
+                                };
+                            }
+                        }
+                    }
+                    executionLog.push('⚠️ 内容提取需要手动复制');
+                    return { status: 'manual', message: '请手动复制页面内容' };
+
+                case 'summarize':
+                    // 收集前置任务的结果
+                    executionLog.push('🔄 正在生成总结...');
+                    let summarizeContent = '';
+                    
+                    // 从依赖任务中获取内容
+                    if (task._prev_results) {
+                        for (const key in task._prev_results) {
+                            const prevData = task._prev_results[key];
+                            if (prevData.results) {
+                                summarizeContent += JSON.stringify(prevData.results, null, 2);
+                            }
+                            if (prevData.content) {
+                                summarizeContent += prevData.content;
+                            }
+                        }
+                    }
+                    
+                    if (summarizeContent) {
+                        task.params._prev_results_content = summarizeContent;
+                    }
+                    
+                    try {
+                        const response = await fetch(`${API_BASE}/api/task/execute`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                plan_id: 'summarize',
+                                tasks: [task]
+                            })
+                        });
+                        const data = await response.json();
+                        if (data.success && data.data.final_result) {
+                            executionLog.push('✅ 内容总结完成');
+                            return data.data.final_result.summary || data.data.final_result;
+                        }
+                    } catch (e) {
+                        console.error('Summarize error:', e);
+                    }
+                    return { status: 'success', message: '总结完成' };
+
+                case 'wait':
+                    const seconds = task.params.seconds || 2;
+                    await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+                    executionLog.push(`⏳ 等待 ${seconds} 秒`);
+                    return { status: 'success' };
+
+                case 'chat':
+                    executionLog.push('💬 使用对话回答');
+                    return { status: 'success' };
+
+                default:
+                    executionLog.push(`⚠️ 未知任务类型: ${task.type}`);
+                    return { status: 'unknown' };
+            }
+        }
+
+        // 显示意图确认对话框
+        function showIntentConfirmDialog(message, intent, params) {
+            const modal = document.getElementById('intentConfirmModal');
+            const messageDiv = document.getElementById('intentConfirmMessage');
+            const confirmBtn = document.getElementById('intentConfirmBtn');
+            const cancelBtn = document.getElementById('intentCancelBtn');
+
+            messageDiv.textContent = message;
+            modal.style.display = 'flex';
+
+            // 设置按钮文案
+            const intentLabels = {
+                'video': { confirm: '🎬 确认生成视频', cancel: '取消，继续对话' },
+                'web': { confirm: '🌐 确认执行', cancel: '取消，继续对话' },
+                'document': { confirm: '📄 确认生成文档', cancel: '取消，继续对话' }
+            };
+
+            const labels = intentLabels[intent] || { confirm: '确认执行', cancel: '取消' };
+            confirmBtn.textContent = labels.confirm;
+            cancelBtn.textContent = labels.cancel;
+
+            // 移除旧的事件监听器
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            // 添加新的事件监听器
+            newConfirmBtn.addEventListener('click', async () => {
+                hideIntentConfirmDialog();
+                await executeIntent();
+            });
+
+            newCancelBtn.addEventListener('click', async () => {
+                hideIntentConfirmDialog();
+                // 用户取消，改为普通对话
+                if (pendingIntent) {
+                    await sendNormalMessage(pendingIntent.text);
+                }
+                pendingIntent = null;
+            });
+        }
+
+        // 隐藏意图确认对话框
+        function hideIntentConfirmDialog() {
+            document.getElementById('intentConfirmModal').style.display = 'none';
+        }
+
+        // 执行确认的意图
+        async function executeIntent() {
+            if (!pendingIntent) return;
+
+            const { text, intent, params } = pendingIntent;
+            sendBtn.disabled = true;
+
+            // 重置进度步骤
+            resetProgressSteps();
+
+            // 创建进度消息元素
+            const progressMessage = addMessage('assistant', '', false, null, null, 'text');
+            updateProgressMessage(progressMessage, '🤔 正在准备执行任务...', 5);
 
             try {
+                // 使用流式端点获取实时进度
+                const response = await fetch(`${API_BASE}/api/intent/execute/stream`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        intent: intent,
+                        params: params,
+                        confirmed: true
+                    })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const eventData = JSON.parse(line.slice(6));
+                                
+                                if (eventData.type === 'progress') {
+                                    // 更新进度消息
+                                    updateProgressMessage(progressMessage, eventData.message, eventData.progress);
+                                } else if (eventData.type === 'complete') {
+                                    // 任务完成
+                                    finalizeProgressMessage(progressMessage, eventData, intent);
+                                    showToast('✅ 任务执行成功', 'success');
+                                } else if (eventData.type === 'error') {
+                                    // 错误
+                                    updateProgressMessage(progressMessage, '❌ 错误: ' + eventData.message, 0);
+                                    showToast('执行失败', 'error');
+                                } else if (eventData.type === 'start') {
+                                    updateProgressMessage(progressMessage, eventData.message, 5);
+                                }
+                            } catch (e) {
+                                console.error('Parse SSE error:', e);
+                            }
+                        }
+                    }
+                }
+
+            } catch (error) {
+                console.error('Execute intent error:', error);
+                updateProgressMessage(progressMessage, '❌ 执行失败: ' + error.message, 0);
+                showToast('执行失败', 'error');
+            } finally {
+                pendingIntent = null;
+                sendBtn.disabled = false;
+            }
+        }
+
+        // 存储已显示的进度步骤
+        let displayedProgressSteps = [];
+        let lastProgressMessage = '';
+        
+        // 更新进度消息 - AI思考模式样式
+        function updateProgressMessage(messageElement, content, progress) {
+            const contentDiv = messageElement.querySelector('.message-content');
+            if (contentDiv) {
+                // 检查是否是新步骤（内容变化）
+                const isNewStep = content !== lastProgressMessage;
+                if (isNewStep) {
+                    displayedProgressSteps.push(content);
+                    lastProgressMessage = content;
+                }
+                
+                // 构建思考模式HTML
+                let stepsHtml = '';
+                displayedProgressSteps.forEach((step, index) => {
+                    const isLast = index === displayedProgressSteps.length - 1;
+                    const delay = index * 0.1;
+                    stepsHtml += `
+                        <div class="thinking-step" style="animation-delay: ${delay}s;">
+                            <span class="thinking-step-icon">${isLast ? '▶' : '✓'}</span>
+                            <span class="thinking-step-text">${step}</span>
+                        </div>
+                    `;
+                });
+                
+                const thinkingHtml = `
+                    <div class="thinking-container">
+                        <div class="thinking-header">
+                            <span class="thinking-icon">💭</span>
+                            <span>AI 正在思考...</span>
+                        </div>
+                        <div class="thinking-steps">
+                            ${stepsHtml}
+                        </div>
+                        <div class="thinking-progress-bar">
+                            <div class="thinking-progress-fill" style="width: ${progress}%;"></div>
+                        </div>
+                    </div>
+                `;
+                contentDiv.innerHTML = thinkingHtml;
+            }
+            // 滚动到底部
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // 重置进度步骤（新任务开始时调用）
+        function resetProgressSteps() {
+            displayedProgressSteps = [];
+            lastProgressMessage = '';
+        }
+
+        // 完成进度消息
+        function finalizeProgressMessage(messageElement, data, intent) {
+            const contentDiv = messageElement.querySelector('.message-content');
+            if (contentDiv) {
+                let finalContent = data.formatted_message || data.message;
+                
+                // 构建完成的步骤历史
+                let stepsHtml = '';
+                displayedProgressSteps.forEach((step, index) => {
+                    stepsHtml += `
+                        <div class="thinking-step" style="animation-delay: ${index * 0.05}s; opacity: 1; transform: none;">
+                            <span class="thinking-step-icon">✓</span>
+                            <span class="thinking-step-text">${step}</span>
+                        </div>
+                    `;
+                });
+                
+                // 添加下载链接（可点击）
+                if (intent === 'document' && data.data && data.data.file_url) {
+                    const fileUrl = `${API_BASE}${data.data.file_url}`;
+                    const fileName = data.data.file_name || 'document';
+                    finalContent += `\n\n<div class="download-link" style="margin-top: 12px;">
+                        <a href="${fileUrl}" download="${fileName}" style="
+                            display: inline-flex;
+                            align-items: center;
+                            padding: 8px 16px;
+                            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                            color: white;
+                            border-radius: 8px;
+                            text-decoration: none;
+                            font-weight: 500;
+                            transition: transform 0.2s, box-shadow 0.2s;
+                        " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(99,102,241,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+                            📥 下载文档
+                        </a>
+                    </div>`;
+                } else if (intent === 'video' && data.data && data.data.video_url) {
+                    const videoUrl = data.data.video_url;
+                    finalContent += `\n\n<div class="video-link" style="margin-top: 12px;">
+                        <a href="${videoUrl}" target="_blank" style="
+                            display: inline-flex;
+                            align-items: center;
+                            padding: 8px 16px;
+                            background: linear-gradient(135deg, #f59e0b, #ef4444);
+                            color: white;
+                            border-radius: 8px;
+                            text-decoration: none;
+                            font-weight: 500;
+                        ">
+                            🎬 播放视频
+                        </a>
+                    </div>`;
+                } else if (intent === 'image' && data.data && data.data.image_url) {
+                    const imageUrl = data.data.image_url;
+                    finalContent += `\n\n<div class="image-link" style="margin-top: 12px;">
+                        <a href="${imageUrl}" target="_blank" style="
+                            display: inline-flex;
+                            align-items: center;
+                            padding: 8px 16px;
+                            background: linear-gradient(135deg, #10b981, #06b6d4);
+                            color: white;
+                            border-radius: 8px;
+                            text-decoration: none;
+                            font-weight: 500;
+                        ">
+                            🎨 查看图片
+                        </a>
+                    </div>`;
+                }
+                
+                // 最终显示：思考过程 + 结果
+                const finalHtml = `
+                    <div class="thinking-container" style="opacity: 0.7; margin-bottom: 12px;">
+                        <div class="thinking-header" style="color: #10b981;">
+                            <span class="thinking-icon" style="background: linear-gradient(135deg, #10b981, #06b6d4); animation: none;">✓</span>
+                            <span>思考过程</span>
+                        </div>
+                        <div class="thinking-steps" style="font-size: 12px;">
+                            ${stepsHtml}
+                        </div>
+                    </div>
+                    <div class="final-result">
+                        ${formatContent(finalContent)}
+                    </div>
+                `;
+                contentDiv.innerHTML = finalHtml;
+            }
+        }
+
+        // 发送普通对话消息
+        async function sendNormalMessage(text) {
+            const streamMode = document.getElementById('streamMode').checked;
+            const generateVideo = document.getElementById('generateVideo').checked;
+            const enableSearch = document.getElementById('enableSearch').checked;
+
+            try {
+                // 构建请求参数
+                const requestBody = {
+                    text: text,
+                    generate_audio: true,
+                    generate_video: generateVideo,
+                    call_mode: currentCallMode,
+                    enable_search: enableSearch
+                };
+                
+                // 根据调用模式添加对应参数
+                if (currentCallMode === 'zeroToken') {
+                    requestBody.zero_token_platform = currentPlatform;
+                } else if (currentCallMode === 'ollamaAPI') {
+                    requestBody.model = currentOllamaModel;
+                } else if (currentCallMode === 'deepseekAPI') {
+                    requestBody.deepseek_model = currentDeepseekModel;
+                }
+                
                 if (streamMode && ws && ws.readyState === WebSocket.OPEN) {
                     isStreaming = true;
                     addMessage('assistant', '', true, null, null, 'text');
-                    ws.send(JSON.stringify({
+                    const wsMessage = {
                         type: 'chat',
-                        text: text
-                    }));
+                        text: text,
+                        call_mode: currentCallMode,
+                        enable_search: enableSearch
+                    };
+                    if (currentCallMode === 'zeroToken') {
+                        wsMessage.zero_token_platform = currentPlatform;
+                    } else if (currentCallMode === 'ollamaAPI') {
+                        wsMessage.model = currentOllamaModel;
+                    } else if (currentCallMode === 'deepseekAPI') {
+                        wsMessage.deepseek_model = currentDeepseekModel;
+                    }
+                    ws.send(JSON.stringify(wsMessage));
                 } else {
                     const response = await fetch(`${API_BASE}/api/chat`, {
                         method: 'POST',
@@ -1094,7 +2724,7 @@
                     }
                 }
             } catch (error) {
-                console.error('Send message error:', error);
+                console.error('Send normal message error:', error);
                 showToast('发送失败: ' + error.message, 'error');
             } finally {
                 sendBtn.disabled = false;
@@ -1427,6 +3057,113 @@
             event.target.value = '';
         }
 
+        // Video generation modal
+        function showVideoModal() {
+            document.getElementById('videoModal').classList.add('active');
+            document.getElementById('videoProgress').style.display = 'none';
+            document.getElementById('generateVideoBtn').disabled = false;
+            onProviderChange(); // 初始化UI状态
+        }
+
+        function hideVideoModal() {
+            document.getElementById('videoModal').classList.remove('active');
+        }
+
+        // 切换生成源时更新UI
+        function onProviderChange() {
+            const provider = document.getElementById('videoProvider').value;
+            const videoSizeContainer = document.getElementById('videoSizeContainer');
+            const localResolutionContainer = document.getElementById('localResolutionContainer');
+            const negativePromptContainer = document.getElementById('negativePromptContainer');
+            
+            if (provider === 'local') {
+                // SVD本地模式：显示本地分辨率选项
+                videoSizeContainer.style.display = 'none';
+                localResolutionContainer.style.display = 'block';
+                negativePromptContainer.style.display = 'none';
+            } else if (provider === 'animatediff') {
+                // AnimateDiff模式：显示本地分辨率选项，支持负面提示词
+                videoSizeContainer.style.display = 'none';
+                localResolutionContainer.style.display = 'block';
+                negativePromptContainer.style.display = 'block';
+            } else {
+                // 硅基流动模式：显示所有选项
+                videoSizeContainer.style.display = 'block';
+                localResolutionContainer.style.display = 'none';
+                negativePromptContainer.style.display = 'block';
+            }
+        }
+
+        // Generate video from text
+        async function generateVideoFromText() {
+            const prompt = document.getElementById('videoPrompt').value.trim();
+            if (!prompt) {
+                showToast('请输入视频描述', 'error');
+                return;
+            }
+
+            const provider = document.getElementById('videoProvider').value;
+            const progressText = document.getElementById('progressText');
+            
+            // 根据生成源获取不同的参数
+            let imageSize, negativePrompt;
+            if (provider === 'local' || provider === 'animatediff') {
+                imageSize = document.getElementById('localResolution').value;
+                if (provider === 'animatediff') {
+                    negativePrompt = document.getElementById('videoNegativePrompt').value.trim() || 'bad quality, worse quality, low resolution, blurry';
+                } else {
+                    negativePrompt = '';
+                }
+                progressText.textContent = '正在使用本地模型生成视频，首次加载模型可能需要较长时间...';
+            } else {
+                imageSize = document.getElementById('videoSize').value;
+                negativePrompt = document.getElementById('videoNegativePrompt').value.trim();
+                progressText.textContent = '正在生成视频，请稍候...';
+            }
+
+            // Show progress
+            document.getElementById('videoProgress').style.display = 'block';
+            document.getElementById('generateVideoBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/video/text-to-video`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        image_size: imageSize,
+                        negative_prompt: negativePrompt,
+                        provider: provider,
+                        timeout: 300
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Add message with video
+                    addMessage('user', `🎬 生成视频: ${prompt.substring(0, 50)}...`);
+                    const providerNames = {
+                        'siliconflow': '硅基流动',
+                        'animatediff': 'AnimateDiff',
+                        'local': 'SVD本地模型'
+                    };
+                    addMessage('assistant', `视频已生成完成！(${providerNames[provider]})`, false, null, data.data.video_url, 'text');
+                    showToast('视频生成成功！', 'success');
+                    hideVideoModal();
+                    document.getElementById('videoPrompt').value = '';
+                } else {
+                    showToast('视频生成失败', 'error');
+                }
+            } catch (error) {
+                console.error('Video generation error:', error);
+                showToast('视频生成失败: ' + error.message, 'error');
+            } finally {
+                document.getElementById('videoProgress').style.display = 'none';
+                document.getElementById('generateVideoBtn').disabled = false;
+            }
+        }
+
         // Toast
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
@@ -1436,6 +3173,220 @@
             setTimeout(() => {
                 toast.classList.remove('active');
             }, 3000);
+        }
+
+        // ==================== Fara 网络操作 ====================
+        
+        // 任务模板配置
+        const faraTaskTemplates = {
+            search: {
+                name: '网页搜索',
+                inputs: [
+                    { id: 'searchQuery', label: '搜索内容', placeholder: '输入要搜索的内容', type: 'text' }
+                ],
+                template: (values) => `在百度搜索：${values.searchQuery || ''}`
+            },
+            open_website: {
+                name: '打开网站',
+                inputs: [
+                    { id: 'websiteUrl', label: '网站地址', placeholder: 'https://example.com', type: 'text' }
+                ],
+                template: (values) => `打开网站 ${values.websiteUrl || ''}`
+            },
+            fill_form: {
+                name: '填写表单',
+                inputs: [
+                    { id: 'formName', label: '姓名', placeholder: '输入姓名', type: 'text' },
+                    { id: 'formEmail', label: '邮箱', placeholder: '输入邮箱', type: 'text' }
+                ],
+                template: (values) => `在当前页面填写表单，姓名：${values.formName || ''}，邮箱：${values.formEmail || ''}`
+            },
+            download: {
+                name: '下载文件',
+                inputs: [
+                    { id: 'fileName', label: '文件名称', placeholder: '输入要下载的文件名', type: 'text' }
+                ],
+                template: (values) => `下载文件：${values.fileName || ''}`
+            },
+            screenshot: {
+                name: '截图保存',
+                inputs: [
+                    { id: 'screenshotName', label: '文件名', placeholder: 'screenshot.png', type: 'text' }
+                ],
+                template: (values) => `截取屏幕并保存为 ${values.screenshotName || 'screenshot.png'}`
+            },
+            scroll_read: {
+                name: '滚动阅读',
+                inputs: [
+                    { id: 'scrollDirection', label: '滚动方向', placeholder: 'down', type: 'select', options: ['down', 'up'] }
+                ],
+                template: (values) => `向下滚动阅读页面内容`
+            },
+            login: {
+                name: '自动登录',
+                inputs: [
+                    { id: 'loginUsername', label: '用户名', placeholder: '输入用户名', type: 'text' },
+                    { id: 'loginPassword', label: '密码', placeholder: '输入密码', type: 'password' }
+                ],
+                template: (values) => `登录网站，用户名：${values.loginUsername || ''}，密码：***`
+            },
+            custom: {
+                name: '自定义任务',
+                inputs: [],
+                template: (values) => values.customTask || ''
+            }
+        };
+
+        function showFaraModal() {
+            document.getElementById('faraModal').classList.add('active');
+            document.getElementById('faraProgress').style.display = 'none';
+            document.getElementById('faraResult').style.display = 'none';
+            document.getElementById('executeFaraBtn').disabled = false;
+            onFaraTaskChange();
+        }
+
+        function hideFaraModal() {
+            document.getElementById('faraModal').classList.remove('active');
+        }
+
+        function onFaraTaskChange() {
+            const taskType = document.getElementById('faraTaskType').value;
+            const template = faraTaskTemplates[taskType];
+            const container = document.getElementById('faraTaskInputs');
+            
+            container.innerHTML = '';
+            
+            if (template.inputs && template.inputs.length > 0) {
+                template.inputs.forEach(input => {
+                    const div = document.createElement('div');
+                    div.className = 'setting-item';
+                    div.style.marginBottom = '8px';
+                    
+                    const label = document.createElement('label');
+                    label.textContent = input.label;
+                    div.appendChild(label);
+                    
+                    if (input.type === 'select') {
+                        const select = document.createElement('select');
+                        select.id = `fara_${input.id}`;
+                        select.style.cssText = 'width:100%;padding:8px 12px;background:var(--bg-color);border:1px solid var(--border-color);border-radius:6px;color:var(--text-color);font-size:13px;';
+                        input.options.forEach(opt => {
+                            const option = document.createElement('option');
+                            option.value = opt;
+                            option.textContent = opt;
+                            select.appendChild(option);
+                        });
+                        div.appendChild(select);
+                    } else {
+                        const inputEl = document.createElement('input');
+                        inputEl.type = input.type || 'text';
+                        inputEl.id = `fara_${input.id}`;
+                        inputEl.placeholder = input.placeholder;
+                        inputEl.style.cssText = 'width:100%;padding:8px 12px;background:var(--bg-color);border:1px solid var(--border-color);border-radius:6px;color:var(--text-color);font-size:13px;';
+                        div.appendChild(inputEl);
+                    }
+                    
+                    container.appendChild(div);
+                });
+            }
+            
+            // 更新任务输入框
+            updateFaraTaskInput();
+        }
+
+        function updateFaraTaskInput() {
+            const taskType = document.getElementById('faraTaskType').value;
+            const template = faraTaskTemplates[taskType];
+            const taskInput = document.getElementById('faraTaskInput');
+            
+            // 收集输入值
+            const values = {};
+            if (template.inputs) {
+                template.inputs.forEach(input => {
+                    const el = document.getElementById(`fara_${input.id}`);
+                    if (el) values[input.id] = el.value;
+                });
+            }
+            
+            // 生成任务描述
+            if (taskType !== 'custom') {
+                taskInput.value = template.template(values);
+            }
+            
+            // 添加输入事件监听
+            if (template.inputs) {
+                template.inputs.forEach(input => {
+                    const el = document.getElementById(`fara_${input.id}`);
+                    if (el) {
+                        el.oninput = updateFaraTaskInput;
+                    }
+                });
+            }
+        }
+
+        async function executeFaraTask() {
+            const taskInput = document.getElementById('faraTaskInput').value.trim();
+            const contextInput = document.getElementById('faraContextInput').value.trim();
+            
+            if (!taskInput) {
+                showToast('请输入任务描述', 'error');
+                return;
+            }
+            
+            // 显示进度
+            document.getElementById('faraProgress').style.display = 'block';
+            document.getElementById('faraResult').style.display = 'none';
+            document.getElementById('executeFaraBtn').disabled = true;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/fara/execute`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        task: taskInput,
+                        context: contextInput || null,
+                        max_tokens: 1024,
+                        temperature: 0.7
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 显示结果
+                    document.getElementById('faraResult').style.display = 'block';
+                    const resultContent = document.getElementById('faraResultContent');
+                    
+                    let resultHtml = `<p style="margin-bottom: 12px;"><strong>任务：</strong>${data.data.task}</p>`;
+                    resultHtml += `<p style="margin-bottom: 12px;"><strong>响应：</strong></p>`;
+                    resultHtml += `<div style="background: var(--card-bg); padding: 10px; border-radius: 6px; margin-bottom: 12px;">${data.data.response.replace(/\n/g, '<br>')}</div>`;
+                    
+                    if (data.data.actions && data.data.actions.length > 0) {
+                        resultHtml += `<p style="margin-bottom: 8px;"><strong>识别的操作指令：</strong></p>`;
+                        resultHtml += `<ul style="margin-left: 20px;">`;
+                        data.data.actions.forEach(action => {
+                            resultHtml += `<li style="margin-bottom: 4px;">${JSON.stringify(action)}</li>`;
+                        });
+                        resultHtml += `</ul>`;
+                    }
+                    
+                    resultContent.innerHTML = resultHtml;
+                    
+                    // 添加到聊天记录
+                    addMessage('user', `🌐 网络操作任务: ${taskInput.substring(0, 50)}...`);
+                    addMessage('assistant', data.data.response, false, null, null, 'text');
+                    
+                    showToast('任务执行成功', 'success');
+                } else {
+                    showToast('任务执行失败: ' + (data.error || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('Fara task error:', error);
+                showToast('任务执行失败: ' + error.message, 'error');
+            } finally {
+                document.getElementById('faraProgress').style.display = 'none';
+                document.getElementById('executeFaraBtn').disabled = false;
+            }
         }
     </script>
 </body>

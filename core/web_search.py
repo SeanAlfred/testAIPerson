@@ -23,7 +23,7 @@ class WebSearchEngine:
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
         # 搜索引擎配置
-        self.search_provider = self.config.get("provider", "duckduckgo")
+        self.search_provider = self.config.get("provider", "baidu")
 
         # 内容提取配置
         self.max_content_length = self.config.get("max_content_length", 4000)
@@ -81,10 +81,15 @@ class WebSearchEngine:
             else:
                 results = await self._search_baidu(query, max_results)  # 默认使用百度
 
-            # 如果主搜索无结果，尝试备选方案
-            if not results:
-                logger.info("主搜索无结果，尝试维基百科搜索...")
-                results = await self._search_wikipedia(query, max_results)
+            # 如果主搜索无结果，尝试百度作为备选（百度在国内可用）
+            if not results and self.search_provider != "baidu":
+                logger.info("主搜索无结果，尝试百度搜索...")
+                results = await self._search_baidu(query, max_results)
+
+            # 最后尝试 DuckDuckGo（无需翻墙）
+            if not results and self.search_provider != "duckduckgo":
+                logger.info("百度搜索也无结果，尝试DuckDuckGo...")
+                results = await self._search_duckduckgo(query, max_results)
 
             # 提取网页内容
             if extract_content and results:
@@ -289,8 +294,8 @@ class WebSearchEngine:
         """使用Bing搜索API（需要API Key）"""
         api_key = self.config.get("bing_api_key", "")
         if not api_key:
-            logger.warning("Bing API Key未配置，回退到DuckDuckGo")
-            return await self._search_duckduckgo(query, max_results)
+            logger.warning("Bing API Key未配置，回退到百度搜索")
+            return await self._search_baidu(query, max_results)
 
         url = "https://api.bing.microsoft.com/v7.0/search"
         headers = {"Ocp-Apim-Subscription-Key": api_key}
@@ -326,8 +331,8 @@ class WebSearchEngine:
         search_engine_id = self.config.get("google_cx", "")
 
         if not api_key or not search_engine_id:
-            logger.warning("Google API配置不完整，回退到DuckDuckGo")
-            return await self._search_duckduckgo(query, max_results)
+            logger.warning("Google API配置不完整，回退到百度搜索")
+            return await self._search_baidu(query, max_results)
 
         url = "https://www.googleapis.com/customsearch/v1"
         params = {
@@ -445,17 +450,56 @@ class WebSearchEngine:
             return ""
 
     async def get_weather(self, city: str) -> Dict[str, Any]:
-        """获取天气信息"""
-        query = f"{city} 天气"
-        result = await self.search(query, max_results=1, extract_content=True)
+        """获取天气信息 - 使用免费天气API"""
+        try:
+            # 使用 wttr.in 免费天气 API（支持中文城市名）
+            url = f"https://wttr.in/{quote_plus(city)}?format=j1&lang=zh"
+            headers = {"User-Agent": "curl/7.68.0"}  # wttr.in 需要类似 curl 的 UA
 
-        if result["success"] and result["results"]:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(url, headers=headers)
+                response.raise_for_status()
+                data = response.json()
+
+            current = data.get("current_condition", [{}])[0]
+            weather_desc = current.get("lang_zh", [{}])[0].get("value", current.get("weatherDesc", [{}])[0].get("value", "未知"))
+            temp = current.get("temp_C", "N/A")
+            humidity = current.get("humidity", "N/A")
+            wind = current.get("windspeedKmph", "N/A")
+            feels_like = current.get("FeelsLikeC", "N/A")
+
+            weather_info = f"""{city}当前天气：
+天气状况：{weather_desc}
+当前温度：{temp}°C
+体感温度：{feels_like}°C
+湿度：{humidity}%
+风速：{wind} 公里/小时"""
+
             return {
                 "success": True,
                 "city": city,
-                "data": result["results"][0].get("content", result["results"][0].get("snippet", ""))
+                "data": weather_info,
+                "raw": {
+                    "temp": temp,
+                    "humidity": humidity,
+                    "description": weather_desc,
+                    "wind": wind,
+                    "feels_like": feels_like
+                }
             }
-        return {"success": False, "error": "获取天气失败"}
+        except Exception as e:
+            logger.warning(f"天气API查询失败: {e}，尝试搜索引擎...")
+            # 回退到搜索引擎
+            query = f"{city} 天气"
+            result = await self.search(query, max_results=1, extract_content=True)
+
+            if result["success"] and result["results"]:
+                return {
+                    "success": True,
+                    "city": city,
+                    "data": result["results"][0].get("content", result["results"][0].get("snippet", ""))
+                }
+            return {"success": False, "error": f"获取天气失败: {str(e)}"}
 
     async def get_news(self, topic: str = "", max_results: int = 5) -> Dict[str, Any]:
         """获取新闻"""

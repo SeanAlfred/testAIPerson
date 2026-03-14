@@ -97,6 +97,16 @@ class TTSEngine:
         use_rate = rate or self.rate
         use_volume = volume or self.volume
 
+        # 过滤标点符号，只保留中文、英文、数字和空格
+        import re
+        text = re.sub(r'[^\u4e00-\u9fa5a-zA-Z0-9\s]', '', text)
+        # 将多个空格替换为单个空格
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        if not text:
+            logger.warning("过滤后文本为空，跳过语音合成")
+            return None
+
         # 生成输出文件路径
         if output_file is None:
             import uuid

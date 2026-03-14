@@ -110,21 +110,33 @@ class ImageGenerator:
             "model": self.model,
             "prompt": prompt,
             "negative_prompt": negative_prompt or self.negative_prompt,
-            "image_size": f"{width}x{height}",
-            "num_images": num_images,
+            "size": f"{width}x{height}",  # 使用 size 而非 image_size
+            "n": num_images,  # 使用 n 而非 num_images
         }
         if seed:
             payload["seed"] = seed
 
         try:
             async with httpx.AsyncClient(timeout=60) as client:
+                logger.info(f"SiliconFlow请求: model={self.model}, prompt={prompt[:50]}...")
                 response = await client.post(url, json=payload, headers=headers)
-                response.raise_for_status()
+                
+                # 记录响应状态
+                logger.info(f"SiliconFlow响应: status={response.status_code}")
+                
+                if response.status_code != 200:
+                    error_text = response.text
+                    logger.error(f"SiliconFlow API错误 [{response.status_code}]: {error_text}")
+                    raise Exception(f"API返回错误 {response.status_code}: {error_text[:500]}")
+                
                 data = response.json()
+                logger.debug(f"响应数据keys: {list(data.keys())}")
 
             # 保存图像
             saved_paths = []
-            for i, img_data in enumerate(data.get("images", [])):
+            images = data.get("images", [])
+            logger.info(f"收到 {len(images)} 张图像")
+            for i, img_data in enumerate(images):
                 if output_file and i == 0:
                     file_path = Path(output_file)
                 else:
@@ -165,10 +177,17 @@ class ImageGenerator:
             return saved_paths
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"SiliconFlow API错误: {e.response.text}")
-            raise
+            error_detail = e.response.text if hasattr(e, 'response') else str(e)
+            logger.error(f"SiliconFlow HTTP错误: {error_detail}")
+            raise Exception(f"SiliconFlow API HTTP错误: {error_detail[:500]}")
+        except httpx.TimeoutException:
+            logger.error("SiliconFlow请求超时")
+            raise Exception("SiliconFlow API请求超时")
+        except httpx.RequestError as e:
+            logger.error(f"SiliconFlow网络错误: {e}")
+            raise Exception(f"网络请求失败: {e}")
         except Exception as e:
-            logger.error(f"图像生成失败: {e}")
+            logger.error(f"图像生成失败: {type(e).__name__}: {e}")
             raise
 
     async def _generate_replicate(

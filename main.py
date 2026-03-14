@@ -11,6 +11,15 @@ import argparse
 from pathlib import Path
 from dotenv import load_dotenv
 
+# 设置 Windows 控制台 UTF-8 编码
+if sys.platform == 'win32':
+    import locale
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except:
+        pass
+
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -86,10 +95,15 @@ def get_default_config() -> dict:
         },
         "llm": {
             "provider": "ollama",
+            "call_mode": "ollamaAPI",
             "ollama": {
                 "base_url": "http://localhost:11434",
                 "model": "qwen2.5:7b",
                 "timeout": 60
+            },
+            "zero_token": {
+                "platform": "deepseek",
+                "model": None
             }
         },
         "tts": {
@@ -112,7 +126,7 @@ def get_default_config() -> dict:
         },
         "digital_human": {
             "default_avatar": {
-                "name": "小美",
+                "name": "小婷",
                 "description": "专业的AI助手，亲切友好",
                 "style": "professional"
             }

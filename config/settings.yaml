@@ -12,22 +12,39 @@ server:
   host: "0.0.0.0"
   port: 8000
   cors_origins:
+    - "*"  # 允许所有来源（浏览器扩展需要）
     - "http://localhost"
     - "http://localhost:3000"
     - "http://127.0.0.1"
+    - "null"  # 浏览器扩展某些情况下 origin 为 null
 
 # 大模型配置 (Ollama)
 llm:
   provider: "ollama"
+  call_mode: "ollamaAPI"  # ollamaAPI: 传统API调用, zeroToken: 免Token调用
+  
+  # Ollama配置
   ollama:
     base_url: "http://localhost:11434"
-    model: "qwen3:8b"  # 可选: llama3, qwen2.5, mistral 等
+    model: "qwen3-coder:480b-cloud"  # 可选: llama3, qwen2.5, mistral 等
     timeout: 60
+  
   # 备选API配置
   openai:
     api_key: ""
     base_url: "https://api.openai.com/v1"
     model: "gpt-4o-mini"
+  
+  # ZeroToken免Token调用配置
+  zero_token:
+    platform: "deepseek"  # deepseek, claude, doubao
+    model: null  # null表示使用平台默认模型
+  
+  # DeepSeek官方API配置
+  deepseek:
+    api_key: "sk-d1830be6041f4ee28048794ef6bae13d"
+    base_url: "https://api.deepseek.com/v1"
+    model: "deepseek-chat"  # deepseek-chat, deepseek-reasoner
 
 # 语音合成配置 (Edge-TTS)
 tts:
@@ -71,7 +88,7 @@ image:
   provider: "siliconflow"  # siliconflow, replicate, stability
   siliconflow:
     api_key: "sk-tuschgeaxljqmhoawmodckbsxhyitrhmoodauzzumvkqnjlu"
-    model: "Kwai-Kolors/Kolors"  # 快手可图模型
+    model: "Qwen/Qwen-Image"  # 通义千问图像生成模型
     negative_prompt: "low quality, blurry, distorted, ugly"
   replicate:
     api_key: ""
@@ -91,11 +108,21 @@ video:
   heygen:
     api_key: ""
 
+# 文本到视频生成配置 (SiliconFlow)
+text_to_video:
+  provider: "siliconflow"
+  siliconflow:
+    api_key: "sk-tuschgeaxljqmhoawmodckbsxhyitrhmoodauzzumvkqnjlu"
+    model: "Wan-AI/Wan2.2-T2V-A14B"  # 文生视频模型
+    image_to_video_model: "Wan-AI/Wan2.2-I2V-A14B"  # 图生视频模型
+    default_size: "1280x720"  # 默认分辨率
+    timeout: 300  # 超时时间(秒)
+
 # 数字人配置
 digital_human:
   # 默认数字人形象
   default_avatar:
-    name: "小美"
+    name: "小婷"
     description: "专业的AI助手，亲切友好"
     style: "professional"
 

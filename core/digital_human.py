@@ -119,7 +119,7 @@ class DigitalHuman:
         if default_path.exists():
             self.current_avatar = Avatar(
                 id="default",
-                name=self.default_avatar_config.get("name", "小美"),
+                name=self.default_avatar_config.get("name", "小婷"),
                 image_path=str(default_path),
                 description=self.default_avatar_config.get("description", ""),
                 style=self.default_avatar_config.get("style", "professional")
@@ -129,7 +129,7 @@ class DigitalHuman:
 
         # 创建默认形象
         return await self.create_avatar(
-            name=self.default_avatar_config.get("name", "小美"),
+            name=self.default_avatar_config.get("name", "小婷"),
             description=self.default_avatar_config.get("description", "专业的AI助手，亲切友好"),
             style=self.default_avatar_config.get("style", "professional"),
             save_as_default=True
@@ -227,7 +227,7 @@ class DigitalHuman:
         """判断是否需要联网搜索"""
         # 搜索触发关键词
         search_keywords = [
-            "最新", "今天", "现在", "当前", "最近", "新闻", "天气",
+            "最新", "今天", "现在", "当前", "最近", "新闻",
             "实时", "最新消息", "发生了什么", "有什么新闻",
             "查询", "搜索", "查找", "帮我查", "上网查",
             "股价", "汇率", "行情", "比分", "直播",
@@ -237,7 +237,6 @@ class DigitalHuman:
         # 问题模式
         question_patterns = [
             r".*最新.*",
-            r".*今天.*天气.*",
             r".*现在.*情况.*",
             r".*最近.*新闻.*",
             r".*当前.*",
@@ -277,6 +276,33 @@ class DigitalHuman:
 
         return query.strip()
 
+    def _is_weather_query(self, user_input: str) -> tuple:
+        """判断是否是天气查询，返回 (是否天气查询, 城市名)"""
+        import re
+
+        # 天气查询模式
+        weather_patterns = [
+            r"(.+?)的?天气",
+            r"(.+?)今天.*天气",
+            r"(.+?)的?气温",
+            r"天气.*(.+)",
+            r"(.+?)下雨吗",
+            r"(.+?)冷不冷",
+            r"(.+?)热不热",
+        ]
+
+        for pattern in weather_patterns:
+            match = re.search(pattern, user_input)
+            if match:
+                city = match.group(1).strip()
+                # 清理城市名
+                city = city.replace("今天", "").replace("现在", "").replace("当前", "")
+                city = city.replace("的", "").replace("这", "").strip()
+                if city and len(city) <= 10:  # 合理的城市名长度
+                    return True, city
+
+        return False, None
+
     async def chat(
         self,
         user_input: str,
@@ -312,12 +338,33 @@ class DigitalHuman:
             description=self.current_avatar.description if self.current_avatar else ""
         )
 
+        # 添加当前日期时间
+        from datetime import datetime
+        now = datetime.now()
+        current_time = now.strftime("%Y年%m月%d日 %H:%M:%S")
+        weekday_names = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+        weekday = weekday_names[now.weekday()]
+        system_prompt += f"\n\n当前时间：{current_time} {weekday}"
+
         # 添加联网能力说明
         system_prompt += "\n\n你拥有联网搜索能力，可以获取实时信息。当用户询问最新消息、天气、新闻等需要实时信息的问题时，系统会自动为你提供搜索结果。"
 
-        # 检查是否需要联网搜索
+        # 检查是否是天气查询
         search_context = ""
-        if enable_search and self._needs_web_search(user_input):
+        is_weather, city = self._is_weather_query(user_input)
+        if is_weather and city:
+            logger.info(f"触发天气查询: {city}")
+            weather_result = await self.web_search.get_weather(city)
+            if weather_result["success"]:
+                search_context = weather_result["data"]
+                system_prompt += f"\n\n以下是{city}的实时天气信息，请根据这些信息回答用户问题：\n\n{search_context}"
+                result["search_used"] = True
+                result["search_results"] = [{"type": "weather", "city": city, "data": weather_result.get("raw", {})}]
+                logger.info(f"天气查询成功")
+            else:
+                logger.warning(f"天气查询失败: {weather_result.get('error', '未知错误')}")
+        # 检查是否需要联网搜索
+        elif enable_search and self._needs_web_search(user_input):
             search_query = self._extract_search_query(user_input)
             logger.info(f"触发联网搜索: {search_query}")
 
@@ -390,13 +437,15 @@ class DigitalHuman:
 
     async def chat_stream(
         self,
-        user_input: str
+        user_input: str,
+        enable_search: bool = True
     ) -> AsyncGenerator[str, None]:
         """
         流式对话生成
 
         Args:
             user_input: 用户输入
+            enable_search: 是否启用联网搜索
 
         Yields:
             文本片段
@@ -407,22 +456,69 @@ class DigitalHuman:
             description=self.current_avatar.description if self.current_avatar else ""
         )
 
+        # 添加当前日期时间
+        from datetime import datetime
+        now = datetime.now()
+        current_time = now.strftime("%Y年%m月%d日 %H:%M:%S")
+        weekday_names = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+        weekday = weekday_names[now.weekday()]
+        system_prompt += f"\n\n当前时间：{current_time} {weekday}"
+
+        # 添加联网能力说明
+        system_prompt += "\n\n你拥有联网搜索能力，可以获取实时信息。当用户询问最新消息、天气、新闻等需要实时信息的问题时，系统会自动为你提供搜索结果。"
+
+        # 检查是否是天气查询
+        search_context = ""
+        is_weather, city = self._is_weather_query(user_input)
+        if is_weather and city:
+            logger.info(f"[流式] 触发天气查询: {city}")
+            weather_result = await self.web_search.get_weather(city)
+            if weather_result["success"]:
+                search_context = weather_result["data"]
+                system_prompt += f"\n\n以下是{city}的实时天气信息，请根据这些信息回答用户问题：\n\n{search_context}"
+                logger.info(f"[流式] 天气查询成功")
+            else:
+                logger.warning(f"[流式] 天气查询失败: {weather_result.get('error', '未知错误')}")
+        # 检查是否需要联网搜索
+        elif enable_search and self._needs_web_search(user_input):
+            search_query = self._extract_search_query(user_input)
+            logger.info(f"[流式] 触发联网搜索: {search_query}")
+
+            search_result = await self.web_search.search(search_query, max_results=3, extract_content=True)
+
+            if search_result["success"] and search_result["results"]:
+                search_context = format_search_results(search_result)
+                system_prompt += f"\n\n以下是相关的网络搜索结果，请根据这些信息回答用户问题：\n\n{search_context}"
+                logger.info(f"[流式] 搜索完成，获取 {len(search_result['results'])} 条结果")
+            else:
+                logger.warning(f"[流式] 搜索失败或无结果: {search_result.get('error', '无结果')}")
+
         # 添加用户消息到历史
         self.conversation_history.append({"role": "user", "content": user_input})
 
+        # 限制历史长度
+        if len(self.conversation_history) > self.max_history * 2:
+            self.conversation_history = self.conversation_history[-self.max_history * 2:]
+
         # 流式生成
         full_response = ""
-        async for chunk in await self.llm.generate(
-            prompt=user_input,
-            system_prompt=system_prompt,
-            history=self.conversation_history[:-1],
-            stream=True
-        ):
-            full_response += chunk
-            yield chunk
+        try:
+            async for chunk in await self.llm.generate(
+                prompt=user_input,
+                system_prompt=system_prompt,
+                history=self.conversation_history[:-1],
+                stream=True
+            ):
+                full_response += chunk
+                yield chunk
 
-        # 添加完整回复到历史
-        self.conversation_history.append({"role": "assistant", "content": full_response})
+            # 添加完整回复到历史
+            self.conversation_history.append({"role": "assistant", "content": full_response})
+        except Exception as e:
+            # 如果出错，移除已添加的用户消息
+            if self.conversation_history and self.conversation_history[-1].get("role") == "user":
+                self.conversation_history.pop()
+            raise
 
     async def transcribe_audio(
         self,
