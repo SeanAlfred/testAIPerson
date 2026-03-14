@@ -9,6 +9,9 @@ from loguru import logger
 import httpx
 import asyncio
 
+# 导入凭证加载器
+from config.credentials_loader import get_speech_key, get_speech_config
+
 
 class STTEngine:
     """语音识别引擎 - 支持多种云端和本地服务"""
@@ -23,7 +26,8 @@ class STTEngine:
             self.model = self.api_config.get("model", "base")
             self.language = self.api_config.get("language", "zh")
             self.use_api = self.api_config.get("use_api", False)
-            self.api_key = self.api_config.get("api_key", os.getenv("OPENAI_API_KEY", ""))
+            # 优先从凭证文件获取 API Key
+            self.api_key = get_speech_key('whisper') or self.api_config.get("api_key", os.getenv("OPENAI_API_KEY", ""))
             self.base_url = self.api_config.get("base_url", "https://api.openai.com/v1")
             
             # 设置ffmpeg环境变量（Whisper需要）
@@ -31,21 +35,26 @@ class STTEngine:
 
         elif self.provider == "azure":
             self.api_config = config.get("azure", {})
-            self.api_key = self.api_config.get("api_key", os.getenv("AZURE_SPEECH_KEY", ""))
-            self.region = self.api_config.get("region", "eastasia")
+            # 优先从凭证文件获取 API Key
+            self.api_key = get_speech_key('azure') or self.api_config.get("api_key", os.getenv("AZURE_SPEECH_KEY", ""))
+            self.region = get_speech_config('azure').get('region') or self.api_config.get("region", "eastasia")
             self.language = self.api_config.get("language", "zh-CN")
 
         elif self.provider == "baidu":
             self.api_config = config.get("baidu", {})
-            self.app_id = self.api_config.get("app_id", os.getenv("BAIDU_APP_ID", ""))
-            self.api_key = self.api_config.get("api_key", os.getenv("BAIDU_API_KEY", ""))
-            self.secret_key = self.api_config.get("secret_key", os.getenv("BAIDU_SECRET_KEY", ""))
+            # 优先从凭证文件获取凭证
+            baidu_creds = get_speech_config('baidu')
+            self.app_id = baidu_creds.get('app_id') or self.api_config.get("app_id", os.getenv("BAIDU_APP_ID", ""))
+            self.api_key = baidu_creds.get('api_key') or self.api_config.get("api_key", os.getenv("BAIDU_API_KEY", ""))
+            self.secret_key = baidu_creds.get('secret_key') or self.api_config.get("secret_key", os.getenv("BAIDU_SECRET_KEY", ""))
 
         elif self.provider == "aliyun":
             self.api_config = config.get("aliyun", {})
-            self.app_key = self.api_config.get("app_key", os.getenv("ALIYUN_APP_KEY", ""))
-            self.access_key_id = self.api_config.get("access_key_id", os.getenv("ALIYUN_ACCESS_KEY_ID", ""))
-            self.access_key_secret = self.api_config.get("access_key_secret", os.getenv("ALIYUN_ACCESS_KEY_SECRET", ""))
+            # 优先从凭证文件获取凭证
+            aliyun_creds = get_speech_config('aliyun')
+            self.app_key = aliyun_creds.get('app_key') or self.api_config.get("app_key", os.getenv("ALIYUN_APP_KEY", ""))
+            self.access_key_id = aliyun_creds.get('access_key_id') or self.api_config.get("access_key_id", os.getenv("ALIYUN_ACCESS_KEY_ID", ""))
+            self.access_key_secret = aliyun_creds.get('access_key_secret') or self.api_config.get("access_key_secret", os.getenv("ALIYUN_ACCESS_KEY_SECRET", ""))
 
         logger.info(f"语音识别引擎初始化完成，使用 {self.provider}")
 

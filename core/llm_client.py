@@ -11,6 +11,9 @@ from loguru import logger
 import httpx
 import ollama
 
+# 导入凭证加载器
+from config.credentials_loader import get_llm_key, get_llm_config
+
 
 # 平台配置
 PLATFORM_CONFIGS = {
@@ -82,8 +85,9 @@ class LLMClient:
     def _init_openai(self):
         """初始化OpenAI客户端"""
         from openai import AsyncOpenAI
-        self.api_key = self.openai_config.get("api_key", "")
-        self.base_url = self.openai_config.get("base_url", "https://api.openai.com/v1")
+        # 优先从凭证文件获取 API Key
+        self.api_key = get_llm_key('openai') or self.openai_config.get("api_key", "")
+        self.base_url = get_llm_config('openai').get('base_url') or self.openai_config.get("base_url", "https://api.openai.com/v1")
         self.model = self.openai_config.get("model", "gpt-4o-mini")
 
         if self.api_key:
@@ -94,8 +98,9 @@ class LLMClient:
     def _init_deepseek(self):
         """初始化DeepSeek API客户端"""
         from openai import AsyncOpenAI
-        self.deepseek_api_key = self.deepseek_config.get("api_key", "")
-        self.deepseek_base_url = self.deepseek_config.get("base_url", "https://api.deepseek.com/v1")
+        # 优先从凭证文件获取 API Key
+        self.deepseek_api_key = get_llm_key('deepseek') or self.deepseek_config.get("api_key", "")
+        self.deepseek_base_url = get_llm_config('deepseek').get('base_url') or self.deepseek_config.get("base_url", "https://api.deepseek.com/v1")
         self.deepseek_model = self.deepseek_config.get("model", "deepseek-chat")
 
         if self.deepseek_api_key:

@@ -10,6 +10,9 @@ from loguru import logger
 import httpx
 from bs4 import BeautifulSoup
 
+# 导入凭证加载器
+from config.credentials_loader import get_search_key, get_search_config
+
 
 class WebSearchEngine:
     """网络搜索引擎 - 支持多种搜索方式"""
@@ -292,7 +295,8 @@ class WebSearchEngine:
         max_results: int
     ) -> List[Dict[str, str]]:
         """使用Bing搜索API（需要API Key）"""
-        api_key = self.config.get("bing_api_key", "")
+        # 优先从凭证文件获取 API Key
+        api_key = get_search_key('bing') or self.config.get("bing_api_key", "")
         if not api_key:
             logger.warning("Bing API Key未配置，回退到百度搜索")
             return await self._search_baidu(query, max_results)
@@ -327,8 +331,10 @@ class WebSearchEngine:
         max_results: int
     ) -> List[Dict[str, str]]:
         """使用Google Custom Search API（需要API Key和搜索引擎ID）"""
-        api_key = self.config.get("google_api_key", "")
-        search_engine_id = self.config.get("google_cx", "")
+        # 优先从凭证文件获取 API Key
+        api_key = get_search_key('google') or self.config.get("google_api_key", "")
+        google_config = get_search_config('google')
+        search_engine_id = google_config.get('cx') or self.config.get("google_cx", "")
 
         if not api_key or not search_engine_id:
             logger.warning("Google API配置不完整，回退到百度搜索")

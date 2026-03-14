@@ -13,6 +13,9 @@ from loguru import logger
 from PIL import Image
 import shutil
 
+# 导入凭证加载器
+from config.credentials_loader import get_video_key
+
 
 class VideoGenerator:
     """视频生成器 - 语音驱动的数字人视频"""
@@ -29,10 +32,12 @@ class VideoGenerator:
             self.api_url = self.sadtalker_config.get("api_url", "")
         elif self.provider == "d-id":
             self.d_id_config = config.get("d_id", {})
-            self.api_key = self.d_id_config.get("api_key", os.getenv("D_ID_API_KEY", ""))
+            # 优先从凭证文件获取 API Key
+            self.api_key = get_video_key('d_id') or self.d_id_config.get("api_key", os.getenv("D_ID_API_KEY", ""))
         elif self.provider == "heygen":
             self.heygen_config = config.get("heygen", {})
-            self.api_key = self.heygen_config.get("api_key", os.getenv("HEYGEN_API_KEY", ""))
+            # 优先从凭证文件获取 API Key
+            self.api_key = get_video_key('heygen') or self.heygen_config.get("api_key", os.getenv("HEYGEN_API_KEY", ""))
 
         # 输出目录
         self.output_dir = Path("outputs/videos")

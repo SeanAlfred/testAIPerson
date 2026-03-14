@@ -11,6 +11,9 @@ from loguru import logger
 from PIL import Image
 import io
 
+# 导入凭证加载器
+from config.credentials_loader import get_image_key, get_image_config
+
 
 class ImageGenerator:
     """图像生成器 - 支持多种云端API"""
@@ -22,15 +25,18 @@ class ImageGenerator:
         # 初始化对应提供商的配置
         if self.provider == "siliconflow":
             self.api_config = config.get("siliconflow", {})
-            self.api_key = self.api_config.get("api_key", os.getenv("SILICONFLOW_API_KEY", ""))
+            # 优先从凭证文件获取 API Key
+            self.api_key = get_image_key('siliconflow') or self.api_config.get("api_key", os.getenv("SILICONFLOW_API_KEY", ""))
             self.base_url = "https://api.siliconflow.cn/v1"
         elif self.provider == "replicate":
             self.api_config = config.get("replicate", {})
-            self.api_key = self.api_config.get("api_key", os.getenv("REPLICATE_API_KEY", ""))
+            # 优先从凭证文件获取 API Key
+            self.api_key = get_image_key('replicate') or self.api_config.get("api_key", os.getenv("REPLICATE_API_KEY", ""))
             self.base_url = "https://api.replicate.com/v1"
         elif self.provider == "stability":
             self.api_config = config.get("stability", {})
-            self.api_key = self.api_config.get("api_key", os.getenv("STABILITY_API_KEY", ""))
+            # 优先从凭证文件获取 API Key
+            self.api_key = get_image_key('stability') or self.api_config.get("api_key", os.getenv("STABILITY_API_KEY", ""))
             self.base_url = "https://api.stability.ai/v1"
 
         # 输出目录
